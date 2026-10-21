@@ -19,6 +19,18 @@ Two data sources, always clearly labeled:
   tags matched per artist from MusicBrainz, not measured sound. Artists with no confident
   metadata match stay visibly **Uncategorized** - never guessed. The match coverage
   (e.g. "88% of minutes matched") is always shown next to the numbers.
+- **Story** - your history as chapters: stretches where one artist led your listening,
+  plus discoveries, sessions, skip stats and listening-hour patterns. "Play the story"
+  is a timeline animation that scrubs the chapters - no audio is played. Everything on
+  the view follows the time filter except discoveries: first-ever listens are counted
+  across your full history, whatever range is picked (the view says so where they
+  appear). Labels come only from your minutes - nothing is invented. A "narrator" panel
+  outlines a possible written-story feature; it is not implemented and no text is
+  generated for you.
+- **Map** - artists clustered by their MusicBrainz genre tags, with your chapter route
+  drawn across the clusters. Uses the same one-time genre opt-in as the Genres view;
+  unmatched artists sit outside the clusters rather than being guessed. Demo mode uses
+  built-in demo tags and stays offline.
 - **Artists / Tracks** - ranked lists with first-appearance dates from your own history.
 - **Share** - a shareable PNG card drawn on your device. You pick which fields it shows;
   your raw history never appears on it and nothing is posted for you.
@@ -41,8 +53,8 @@ Two data sources, always clearly labeled:
 
 ## Genre metadata: MusicBrainz (opt-in)
 
-Nothing is sent anywhere until you explicitly enable genre lookup (a button in the Genres
-view, shown for exports only). When enabled, the only data that leaves the device is each
+Nothing is sent anywhere until you explicitly enable genre lookup (a button in the Genres and Map
+views, shown for exports only). When enabled, the only data that leaves the device is each
 artist's *name* as a search query (`GET /ws/2/artist/?query=artist:"<name>"&fmt=json&limit=1`)
 - never plays, timestamps, track titles, or the file itself. Demo mode is fully offline and
 never calls MusicBrainz.
