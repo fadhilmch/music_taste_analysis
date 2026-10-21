@@ -21,10 +21,6 @@ python3 -m http.server 8080 --directory demo
 
 or open `demo/index.html` through any static server (ES modules need http, not file://).
 
-![Taste profile](docs/screenshots/demo-desktop.png)
-
-![Mood mixer on mobile](docs/screenshots/demo-mobile.png)
-
 ### What the demo shows
 
 1. **Taste profile** - average audio features per profile, with the strongest trait highlighted.
