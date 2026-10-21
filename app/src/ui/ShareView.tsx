@@ -1,0 +1,84 @@
+import React from 'react';
+import { downloadShareCard, renderShareCard, type ShareCardData } from '../lib/shareCanvas';
+import { artistEras, filterToMonths, genreMix, rangeMonthKeys, topArtists, topTracks } from '../data/stats';
+import type { MonthBucket, PlayAggregate } from '../data/types';
+import { useAppStore, type CardBits } from '../state/store';
+
+export function ShareView({ months, aggs }: { months: MonthBucket[]; aggs: PlayAggregate[] }) {
+  const range = useAppStore((s) => s.range);
+  const source = useAppStore((s) => s.source);
+  const genres = useAppStore((s) => s.genres);
+  const cardBits = useAppStore((s) => s.cardBits);
+  const toggleCardBit = useAppStore((s) => s.toggleCardBit);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [canvasError, setCanvasError] = React.useState<string | null>(null);
+
+  const rangeLabel = { '4w': '4 weeks', '6m': '6 months', '1y': '1 year', all: 'All time' }[range] ?? range;
+  const ranged = filterToMonths(aggs, rangeMonthKeys(months, range));
+  const total = Math.round(ranged.reduce((s, a) => s + a.ms, 0) / 60000);
+  const topArtist = topArtists(ranged, 1)[0] ?? null;
+  const topTrack = topTracks(ranged, 1)[0] ?? null;
+  const mix = genreMix(ranged, genres);
+  const topGenre = mix.slices[0]?.group ?? null;
+  const eraCount = artistEras(months, aggs).length;
+  const hasMbGenres = Object.values(genres).some((g) => g.source === 'musicbrainz');
+
+  const data: ShareCardData = {
+    rangeLabel,
+    topArtist: topArtist?.name ?? null,
+    topTrack: topTrack ? { name: topTrack.name, artist: topTrack.artist } : null,
+    totalMinutes: total,
+    topGenre,
+    eraCount,
+    sourceLabel: source === 'demo' ? 'demo data' : 'my Spotify export',
+    genreCredit: hasMbGenres ? 'Genre data: MusicBrainz (CC BY-NC-SA)' : null,
+  };
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    try {
+      renderShareCard(canvas, data, cardBits);
+      setCanvasError(null);
+    } catch (err) {
+      setCanvasError(err instanceof Error ? err.message : String(err));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range, aggs, genres, cardBits, source]);
+
+  return (
+    <section className="tj-panel" aria-labelledby="tj-share-h">
+      <div className="tj-panel-head">
+        <h3 id="tj-share-h">Share card</h3>
+        <p>You pick what goes on it</p>
+      </div>
+      <div className="tj-sharewrap">
+        {canvasError ? (
+          <p className="tj-note tj-note-error" role="alert">The card preview needs canvas support: {canvasError}</p>
+        ) : (
+          <canvas ref={canvasRef} className="tj-card-canvas" aria-label="Preview of the share card" />
+        )}
+        <div className="tj-cardopts">
+          {([['artist', 'Top artist'], ['track', 'Top track'], ['minutes', 'Minutes'], ['genre', 'Top genre'], ['eras', 'Era count']] as Array<[keyof CardBits, string]>).map(([k, label]) => (
+            <label key={k} className="tj-check">
+              <input type="checkbox" checked={cardBits[k]} onChange={() => toggleCardBit(k)} />
+              {label}
+            </label>
+          ))}
+          <button
+            type="button"
+            className="tj-btn"
+            disabled={!!canvasError}
+            onClick={() => canvasRef.current && downloadShareCard(canvasRef.current, 'taste-journey.png')}
+          >
+            Download PNG
+          </button>
+          <p className="tj-note">
+            The card is drawn on your device and saved as a PNG for iMessage, Instagram stories,
+            wherever. Nothing is posted for you, and your raw history never appears on it.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
