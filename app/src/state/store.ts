@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import { buildDemoAggregates, DEMO_GENRES } from '../data/demoData';
+import { buildDemoAggregates, buildDemoEvents, DEMO_GENRES } from '../data/demoData';
 import { matchArtists } from '../data/genreService';
 import type { ParseSummary } from '../data/types';
 import { uniqueArtists } from '../data/stats';
-import type { ArtistGenre, PlayAggregate, View } from '../data/types';
+import type { ArtistGenre, PlayAggregate, PlayEvent, View } from '../data/types';
 
 export type Source = 'demo' | 'export' | null;
 export type MatchState = 'idle' | 'matching' | 'done' | 'error';
@@ -13,8 +13,9 @@ export interface CardBits { artist: boolean; track: boolean; minutes: boolean; g
 interface AppState {
   source: Source;
   fileName: string | null;
-  parseInfo: Omit<ParseSummary, 'aggregates'> | null;
+  parseInfo: Omit<ParseSummary, 'aggregates' | 'events'> | null;
   aggregates: PlayAggregate[];
+  events: PlayEvent[];
   genres: Record<string, ArtistGenre>;
   genresAreDemo: boolean;
   matchState: MatchState;
@@ -46,6 +47,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   fileName: null,
   parseInfo: null,
   aggregates: [],
+  events: [],
   genres: {},
   genresAreDemo: false,
   matchState: 'idle',
@@ -67,6 +69,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       fileName: null,
       parseInfo: null,
       aggregates,
+      events: buildDemoEvents(),
       genres: { ...DEMO_GENRES },
       genresAreDemo: true,
       matchState: 'done',
@@ -97,12 +100,13 @@ export const useAppStore = create<AppState>((set, get) => ({
         };
         worker.postMessage(text);
       });
-      const { aggregates, ...parseInfo } = summary;
+      const { aggregates, events, ...parseInfo } = summary;
       set({
         source: 'export',
         fileName: file.name,
         parseInfo,
         aggregates,
+        events,
         genres: {},
         genresAreDemo: false,
         matchState: 'idle',
@@ -154,7 +158,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   reset: () => {
     matchAbort?.abort();
     set({
-      source: null, fileName: null, parseInfo: null, aggregates: [], genres: {},
+      source: null, fileName: null, parseInfo: null, aggregates: [], events: [], genres: {},
       genresAreDemo: false, matchState: 'idle', matchProgress: { done: 0, total: 0 },
       matchError: null, loading: false, error: null, month: null, playing: false,
     });

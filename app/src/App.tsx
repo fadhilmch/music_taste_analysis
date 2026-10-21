@@ -6,9 +6,11 @@ import { ArtistsView, TracksView } from './ui/ListsView';
 import { GenresView } from './ui/GenresView';
 import { GuideView } from './ui/GuideView';
 import { JourneyView } from './ui/JourneyView';
+import { MapView } from './ui/MapView';
 import { PlayerBar } from './ui/PlayerBar';
 import { ShareView } from './ui/ShareView';
 import { SourceBar } from './ui/SourceBar';
+import { StoryView } from './ui/StoryView';
 import { ErrorState, LoadingState, Onboarding } from './ui/states';
 
 const RANGES = [
@@ -20,6 +22,8 @@ const RANGES = [
 
 const TABS: Array<[View, string]> = [
   ['journey', 'Journey'],
+  ['story', 'Story'],
+  ['map', 'Map'],
   ['genres', 'Genres'],
   ['artists', 'Artists'],
   ['tracks', 'Tracks'],
@@ -114,6 +118,8 @@ export default function App() {
                 ))}
               </div>
               {view === 'journey' && <JourneyView months={months} aggs={aggregates} />}
+              {view === 'story' && <StoryView months={months} aggs={aggregates} />}
+              {view === 'map' && <MapView months={months} aggs={aggregates} />}
               {view === 'genres' && <GenresView months={months} aggs={aggregates} />}
               {view === 'artists' && <ArtistsView months={months} aggs={aggregates} />}
               {view === 'tracks' && <TracksView months={months} aggs={aggregates} />}

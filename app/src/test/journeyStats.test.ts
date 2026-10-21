@@ -1,0 +1,151 @@
+import { describe, expect, it } from 'vitest';
+import {
+  chapters, discoveries, hourHistogram, mixStats, sessions, skipStats, weekdayHistogram,
+} from '../data/stats';
+import { parseStreamingHistory } from '../data/parseExport';
+import type { PlayAggregate, PlayEvent } from '../data/types';
+
+const ev = (over: Partial<PlayEvent>): PlayEvent => ({
+  ts: '2025-03-10T20:00:00Z', artist: 'A', track: 't', ms: 180000,
+  skipped: false, reasonEnd: 'trackdone', shuffle: true, offline: false, platform: 'android',
+  ...over,
+});
+
+describe('hour/weekday histograms', () => {
+  it('buckets minutes into local hours and weekdays', () => {
+    const events = [
+      ev({ ts: '2025-03-10T20:00:00Z', ms: 60000 }),   // Monday
+      ev({ ts: '2025-03-10T21:30:00Z', ms: 120000 }), // Monday
+      ev({ ts: '2025-03-12T08:00:00Z', ms: 30000 }),  // Wednesday
+    ];
+    const hours = hourHistogram(events);
+    expect(hours.reduce((s, v) => s + v, 0)).toBe(4); // 1 + 2 + 1 (0.5 rounds up)
+    expect(hours[new Date('2025-03-10T20:00:00Z').getHours()]).toBe(1);
+    expect(hours[new Date('2025-03-10T21:30:00Z').getHours()]).toBe(2);
+    const days = weekdayHistogram(events);
+    expect(days[0]).toBe(3); // Monday-first
+    expect(days[2]).toBe(1);
+  });
+});
+
+describe('skipStats', () => {
+  it('reports hasFlags=false when no row carries a skipped flag', () => {
+    const s = skipStats([ev({ skipped: null }), ev({ skipped: null })]);
+    expect(s.hasFlags).toBe(false);
+  });
+  it('computes overall and per-artist skip rates with a 20-play floor', () => {
+    const events: PlayEvent[] = [];
+    for (let i = 0; i < 30; i++) events.push(ev({ artist: 'SkipMe', skipped: i < 6 }));
+    for (let i = 0; i < 5; i++) events.push(ev({ artist: 'SmallSample', skipped: true }));
+    const s = skipStats(events);
+    expect(s.hasFlags).toBe(true);
+    expect(s.rate).toBeCloseTo(11 / 35, 5);
+    expect(s.byArtist).toHaveLength(1);
+    expect(s.byArtist[0]).toMatchObject({ artist: 'SkipMe', plays: 30 });
+    expect(s.byArtist[0].skipRate).toBeCloseTo(0.2, 5);
+  });
+});
+
+describe('discoveries', () => {
+  it('finds first months, wonders, keepers and latest discoveries', () => {
+    const aggs: PlayAggregate[] = [
+      { month: '2024-01', artist: 'Old', track: 'x', ms: 1000 },
+      { month: '2024-03', artist: 'Old', track: 'x', ms: 1000 },
+      { month: '2024-05', artist: 'Old', track: 'y', ms: 1000 },
+      { month: '2024-06', artist: 'Flash', track: 'z', ms: 1000 },
+      { month: '2024-06', artist: 'New', track: 'w', ms: 1000 },
+      { month: '2024-07', artist: 'New', track: 'w', ms: 1000 },
+    ];
+    const d = discoveries(aggs);
+    expect(d.totalArtists).toBe(3);
+    expect(d.oneMonthWonders).toBe(1); // Flash
+    expect(d.keepers).toBe(1); // Old
+    expect(d.byMonth.find((m) => m.month === '2024-06')?.count).toBe(2);
+    expect(d.latest[0].month).toBe('2024-06'); // first heard, not latest heard
+  });
+});
+
+describe('sessions', () => {
+  it('splits on 30-minute gaps and measures the longest span', () => {
+    const events = [
+      ev({ ts: '2025-03-10T20:00:00Z' }),
+      ev({ ts: '2025-03-10T20:04:00Z' }),
+      ev({ ts: '2025-03-10T22:00:00Z' }), // gap -> new session
+      ev({ ts: '2025-03-11T09:00:00Z' }), // next day
+    ];
+    const s = sessions(events);
+    expect(s.count).toBe(3);
+    expect(s.activeDays).toBe(2);
+  });
+});
+
+describe('mixStats', () => {
+  it('shares shuffle, offline and platform by minutes', () => {
+    const events = [
+      ev({ platform: 'android', shuffle: true, ms: 60000 }),
+      ev({ platform: 'windows 10', shuffle: false, ms: 60000 }),
+      ev({ platform: 'iOS', shuffle: true, offline: true, ms: 60000 }),
+    ];
+    const m = mixStats(events);
+    expect(m.shuffleShare).toBeCloseTo(2 / 3, 5);
+    expect(m.offlineShare).toBeCloseTo(1 / 3, 5);
+    expect(m.platforms).toHaveLength(3);
+    expect(m.platforms.map((p) => p.name)).toContain('Windows');
+  });
+  it('returns null shares when flags are absent', () => {
+    const m = mixStats([ev({ shuffle: null, offline: null, platform: null })]);
+    expect(m.shuffleShare).toBeNull();
+    expect(m.offlineShare).toBeNull();
+    expect(m.platforms).toHaveLength(0);
+  });
+});
+
+describe('chapters', () => {
+  const months = [
+    { key: '2024-01', label: 'January 2024', short: 'Jan', minutes: 100 },
+    { key: '2024-02', label: 'February 2024', short: 'Feb', minutes: 100 },
+    { key: '2024-03', label: 'March 2024', short: 'Mar', minutes: 100 },
+    { key: '2024-04', label: 'April 2024', short: 'Apr', minutes: 100 },
+  ];
+  it('labels first, takeover, phase and comeback eras deterministically', () => {
+    const aggs: PlayAggregate[] = [
+      { month: '2024-01', artist: 'Alpha', track: 'a1', ms: 80 * 60000 },
+      { month: '2024-01', artist: 'Beta', track: 'b1', ms: 20 * 60000 },
+      { month: '2024-02', artist: 'Beta', track: 'b1', ms: 90 * 60000 },
+      { month: '2024-02', artist: 'Alpha', track: 'a1', ms: 10 * 60000 },
+      { month: '2024-03', artist: 'Gamma', track: 'g1', ms: 40 * 60000 },
+      { month: '2024-03', artist: 'Beta', track: 'b1', ms: 35 * 60000 },
+      { month: '2024-03', artist: 'Alpha', track: 'a1', ms: 25 * 60000 },
+      { month: '2024-04', artist: 'Alpha', track: 'a1', ms: 70 * 60000 },
+      { month: '2024-04', artist: 'Beta', track: 'b1', ms: 30 * 60000 },
+    ];
+    const ch = chapters(months, aggs);
+    expect(ch.map((c) => c.kind)).toEqual(['first', 'takeover', 'phase', 'comeback']);
+    expect(ch[3].artist).toBe('Alpha');
+    expect(ch[3].current).toBe(true);
+    expect(ch[1].share).toBeGreaterThanOrEqual(0.45);
+    expect(ch[1].topTrack).toBe('b1');
+  });
+});
+
+describe('parser event extraction', () => {
+  it('keeps skipped/shuffle/offline/platform/reason_end from extended rows', () => {
+    const summary = parseStreamingHistory([
+      {
+        ts: '2025-01-05T22:10:00Z', ms_played: 90000,
+        master_metadata_track_name: 'Song', master_metadata_album_artist_name: 'Artist',
+        skipped: true, reason_end: 'fwdbtn', shuffle: true, offline: false, platform: 'android',
+      },
+    ]);
+    expect(summary.events).toHaveLength(1);
+    expect(summary.events[0]).toMatchObject({ skipped: true, reasonEnd: 'fwdbtn', shuffle: true, offline: false, platform: 'android' });
+  });
+  it('fills nulls for legacy rows', () => {
+    const summary = parseStreamingHistory([
+      { endTime: '2019-03-04 21:05', msPlayed: 200000, trackName: 'Old Song', artistName: 'Old Artist' },
+    ]);
+    expect(summary.events[0].skipped).toBeNull();
+    expect(summary.events[0].platform).toBeNull();
+    expect(summary.events[0].ts).toBe('2019-03-04T21:05');
+  });
+});

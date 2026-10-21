@@ -1,4 +1,4 @@
-import type { ArtistGenre, PlayAggregate } from './types';
+import type { ArtistGenre, PlayAggregate, PlayEvent } from './types';
 
 /**
  * Fictional demo dataset so the app is fully explorable before a real export
@@ -93,3 +93,46 @@ export const DEMO_GENRES: Record<string, ArtistGenre> = Object.fromEntries(
     { groups: [a.group as string], tags: a.tags, source: 'demo' as const, matchedName: a.name },
   ]),
 );
+
+const DEMO_PLATFORMS = ['android', 'android', 'ios', 'windows', 'mac'];
+
+/**
+ * Fictional per-play events that match the demo aggregates in spirit (not
+ * row-for-row): evening-heavy hours, some skips, mostly shuffle, a phone-first
+ * platform mix. Deterministic via the same seeded generator.
+ */
+export function buildDemoEvents(): PlayEvent[] {
+  const keys = demoMonthKeys();
+  const rnd = mulberry32(777);
+  const events: PlayEvent[] = [];
+  for (const a of DEMO_ARTISTS) {
+    keys.forEach((key, i) => {
+      const g = Math.exp(-((i - a.peak) ** 2) / (2 * a.spread * a.spread));
+      const plays = Math.round(g * 34 + rnd() * 6);
+      const y = Number(key.slice(0, 4));
+      const m = Number(key.slice(5, 7));
+      for (let p = 0; p < plays; p++) {
+        const day = 1 + Math.floor(rnd() * 28);
+        // Evening-heavy: 60% between 17-23, else spread across the day.
+        const hour = rnd() < 0.6 ? 17 + Math.floor(rnd() * 7) : 7 + Math.floor(rnd() * 10);
+        const minute = Math.floor(rnd() * 60);
+        const ts = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00Z`;
+        const skipped = rnd() < 0.09;
+        const ms = skipped ? 5000 + Math.floor(rnd() * 25000) : 120000 + Math.floor(rnd() * 120000);
+        events.push({
+          ts,
+          artist: a.name,
+          track: a.tracks[Math.floor(rnd() * a.tracks.length)],
+          ms,
+          skipped,
+          reasonEnd: skipped ? 'fwdbtn' : 'trackdone',
+          shuffle: rnd() < 0.55,
+          offline: rnd() < 0.06,
+          platform: DEMO_PLATFORMS[Math.floor(rnd() * DEMO_PLATFORMS.length)],
+        });
+      }
+    });
+  }
+  events.sort((x, y) => (x.ts < y.ts ? -1 : 1));
+  return events;
+}

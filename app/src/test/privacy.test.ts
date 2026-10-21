@@ -12,6 +12,10 @@ const summary: ParseSummary = {
     { month: '2024-01', artist: 'Real Artist', track: 'Song', ms: 120000 },
     { month: '2024-01', artist: 'Real Artist', track: 'Song 2', ms: 60000 },
   ],
+  events: [
+    { ts: '2024-01-01T10:00:00Z', artist: 'Real Artist', track: 'Song', ms: 120000, skipped: false, reasonEnd: 'trackdone', shuffle: true, offline: false, platform: 'android' },
+    { ts: '2024-01-02T10:00:00Z', artist: 'Real Artist', track: 'Song 2', ms: 60000, skipped: null, reasonEnd: null, shuffle: null, offline: null, platform: null },
+  ],
 };
 
 // Worker shim: resolve immediately with the summary, no real worker thread.

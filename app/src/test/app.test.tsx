@@ -30,6 +30,24 @@ describe('App', () => {
   });
 
 
+  it('renders the Story and Map views on demo data', async () => {
+    useAppStore.getState().reset();
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Demo data' }));
+
+    await user.click(screen.getByRole('button', { name: 'Story' }));
+    expect(screen.getByText('Your story in chapters')).toBeInTheDocument();
+    expect(screen.getAllByText(/First obsession/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Listening clock/i)).toBeInTheDocument();
+    expect(screen.getByText(/Narration - not enabled yet/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Map' }));
+    expect(screen.getByText('Taste map')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Artist clusters/i })).toBeInTheDocument();
+    expect(screen.getByText(/not measured sound/i)).toBeInTheDocument();
+  });
+
   it('shows the import guide from the empty state and the nav', async () => {
     useAppStore.getState().reset();
     const user = userEvent.setup();
