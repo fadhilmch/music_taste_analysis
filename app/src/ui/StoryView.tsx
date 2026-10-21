@@ -1,5 +1,5 @@
 import {
-  chapters, discoveries, fmtMinutes, hourHistogram, mixStats, monthLabel, sessions, skipStats, weekdayHistogram,
+  chapters, discoveries, filterToMonths, fmtMinutes, hourHistogram, mixStats, monthLabel, rangeMonthKeys, sessions, skipStats, weekdayHistogram,
 } from '../data/stats';
 import type { Chapter, MonthBucket, PlayAggregate } from '../data/types';
 import { useAppStore } from '../state/store';
@@ -37,18 +37,26 @@ function MiniBars({ values, labels, ariaLabel }: { values: number[]; labels: str
 
 export function StoryView({ months, aggs }: { months: MonthBucket[]; aggs: PlayAggregate[] }) {
   const events = useAppStore((s) => s.events);
+  const range = useAppStore((s) => s.range);
   const setMonth = useAppStore((s) => s.setMonth);
   const setPlaying = useAppStore((s) => s.setPlaying);
   const setView = useAppStore((s) => s.setView);
 
-  const ch = chapters(months, aggs);
-  const clock = hourHistogram(events);
-  const week = weekdayHistogram(events);
+  // Everything on this view follows the time filter, except discoveries:
+  // first-ever listens only make sense across the full history.
+  const rangeKeys = rangeMonthKeys(months, range);
+  const rangedMonths = months.filter((m) => rangeKeys.has(m.key));
+  const rangedAggs = filterToMonths(aggs, rangeKeys);
+  const rangedEvents = events.filter((e) => rangeKeys.has(e.ts.slice(0, 7)));
+
+  const ch = chapters(rangedMonths, rangedAggs);
+  const clock = hourHistogram(rangedEvents);
+  const week = weekdayHistogram(rangedEvents);
   const peakHour = clock.indexOf(Math.max(...clock));
-  const skips = skipStats(events);
+  const skips = skipStats(rangedEvents);
   const disc = discoveries(aggs);
-  const sess = sessions(events);
-  const mix = mixStats(events);
+  const sess = sessions(rangedEvents);
+  const mix = mixStats(rangedEvents);
 
   const playStory = () => {
     if (ch.length > 0) {
@@ -119,6 +127,7 @@ export function StoryView({ months, aggs }: { months: MonthBucket[]; aggs: PlayA
           labels={disc.byMonth.map((m) => monthLabel(m.month).short)}
           ariaLabel="New artists heard for the first time per month"
         />
+        <p className="tj-note">First-ever listens are counted across your full history, whatever range is picked above.</p>
         <ul className="tj-facts">
           <li><strong>{disc.keepers}</strong> keepers - heard in at least three different months</li>
           <li><strong>{disc.oneMonthWonders}</strong> one-month wonders - heard in a single month</li>

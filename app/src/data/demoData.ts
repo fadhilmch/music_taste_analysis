@@ -16,6 +16,11 @@ interface DemoArtist {
   tracks: string[];
 }
 
+/** First month index the artist is heard - staggered so discoveries spread out. */
+function introIndex(a: DemoArtist): number {
+  return Math.max(0, Math.round(a.peak - 2.2 * a.spread));
+}
+
 export const DEMO_MONTH_START = { year: 2024, month: 4 }; // May 2024, 0-based month
 export const DEMO_MONTH_COUNT = 30; // through Oct 2026
 
@@ -66,6 +71,7 @@ export function buildDemoAggregates(): PlayAggregate[] {
   let sum = 0;
   for (const a of DEMO_ARTISTS) {
     keys.forEach((key, i) => {
+      if (i < introIndex(a)) return;
       const g = Math.exp(-((i - a.peak) ** 2) / (2 * a.spread * a.spread));
       const jitter = 0.75 + rnd2() * 0.5;
       const ms = Math.round((monthlyTotals[i] * 0.62 * g * jitter + monthlyTotals[i] * 0.02) * 60000);
@@ -78,7 +84,8 @@ export function buildDemoAggregates(): PlayAggregate[] {
   const scale = (grandTotal * targetShare) / sum;
   for (const a of DEMO_ARTISTS) {
     a.tracks.forEach((track, ti) => {
-      keys.forEach((key) => {
+      keys.forEach((key, ki) => {
+        if (ki < introIndex(a)) return;
         const ms = Math.round((artistMonthMs.get(`${a.name}${key}`) ?? 0) * scale * (TRACK_SPLIT[ti] ?? 0.05));
         if (ms > 0) aggs.push({ month: key, artist: a.name, track, ms });
       });
@@ -107,6 +114,7 @@ export function buildDemoEvents(): PlayEvent[] {
   const events: PlayEvent[] = [];
   for (const a of DEMO_ARTISTS) {
     keys.forEach((key, i) => {
+      if (i < introIndex(a)) return;
       const g = Math.exp(-((i - a.peak) ** 2) / (2 * a.spread * a.spread));
       const plays = Math.round(g * 34 + rnd() * 6);
       const y = Number(key.slice(0, 4));

@@ -3,6 +3,7 @@ import {
   chapters, discoveries, hourHistogram, mixStats, sessions, skipStats, weekdayHistogram,
 } from '../data/stats';
 import { parseStreamingHistory } from '../data/parseExport';
+import { buildDemoAggregates, buildDemoEvents } from '../data/demoData';
 import type { PlayAggregate, PlayEvent } from '../data/types';
 
 const ev = (over: Partial<PlayEvent>): PlayEvent => ({
@@ -147,5 +148,21 @@ describe('parser event extraction', () => {
     expect(summary.events[0].skipped).toBeNull();
     expect(summary.events[0].platform).toBeNull();
     expect(summary.events[0].ts).toBe('2019-03-04T21:05');
+  });
+});
+
+describe('demo fixtures', () => {
+  it('stagger first listens so the discoveries chart spreads', () => {
+    const d = discoveries(buildDemoAggregates());
+    expect(d.byMonth.length).toBeGreaterThan(3);
+    expect(d.totalArtists).toBe(9);
+  });
+  it('demo events carry skip/shuffle/platform flags for the deeper stats', () => {
+    const events = buildDemoEvents();
+    expect(events.length).toBeGreaterThan(500);
+    expect(skipStats(events).hasFlags).toBe(true);
+    const m = mixStats(events);
+    expect(m.shuffleShare).not.toBeNull();
+    expect(m.platforms.length).toBeGreaterThan(2);
   });
 });

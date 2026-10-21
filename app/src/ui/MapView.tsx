@@ -1,5 +1,5 @@
 import React from 'react';
-import { chapters, fmtMinutes, topArtists } from '../data/stats';
+import { chapters, filterToMonths, fmtMinutes, rangeMonthKeys, topArtists } from '../data/stats';
 import type { MonthBucket, PlayAggregate } from '../data/types';
 import { useAppStore } from '../state/store';
 import { groupHue } from './theme';
@@ -70,9 +70,13 @@ export function MapView({ months, aggs }: { months: MonthBucket[]; aggs: PlayAgg
   const setPlaying = useAppStore((s) => s.setPlaying);
   const setView = useAppStore((s) => s.setView);
 
+  const range = useAppStore((s) => s.range);
   const needsOptIn = source === 'export' && matchState === 'idle';
-  const { nodes, groups } = React.useMemo(() => layout(aggs, genres), [aggs, genres]);
-  const ch = React.useMemo(() => chapters(months, aggs), [months, aggs]);
+  const rangeKeys = rangeMonthKeys(months, range);
+  const rangedMonths = months.filter((m) => rangeKeys.has(m.key));
+  const rangedAggs = filterToMonths(aggs, rangeKeys);
+  const { nodes, groups } = React.useMemo(() => layout(rangedAggs, genres), [rangedAggs, genres]);
+  const ch = React.useMemo(() => chapters(rangedMonths, rangedAggs), [rangedMonths, rangedAggs]);
   const route = ch.map((c, i) => ({ n: i + 1, c, node: nodes.find((nd) => nd.artist === c.artist) })).filter((r) => r.node) as Array<{ n: number; c: (typeof ch)[number]; node: Node }>;
 
   if (needsOptIn) {
