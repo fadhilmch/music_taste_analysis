@@ -1,0 +1,23 @@
+name: Test
+
+on:
+  pull_request:
+    paths: ['demo/**', 'tests/**', 'package.json', '.github/workflows/test.yml']
+  push:
+    branches: [master]
+    paths: ['demo/**', 'tests/**', 'package.json', '.github/workflows/test.yml']
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
