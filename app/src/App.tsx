@@ -9,7 +9,7 @@ import { JourneyView } from './ui/JourneyView';
 import { PlayerBar } from './ui/PlayerBar';
 import { ShareView } from './ui/ShareView';
 import { SourceBar } from './ui/SourceBar';
-import { EmptyState, ErrorState, LoadingState } from './ui/states';
+import { ErrorState, LoadingState, Onboarding } from './ui/states';
 
 const RANGES = [
   { id: '4w', label: '4 weeks' },
@@ -89,11 +89,7 @@ export default function App() {
           {view === 'guide' && <GuideView />}
 
           {!loading && !error && view !== 'guide' && source === null && (
-            <EmptyState
-              title="Start with the demo or your own export"
-              detail="The demo shows every screen on invented data. Your export is read locally and never uploaded."
-              action={{ label: 'How to get your export', onClick: () => setView('guide') }}
-            />
+            <Onboarding />
           )}
 
           {!loading && !error && view !== 'guide' && source !== null && aggregates.length > 0 && (
