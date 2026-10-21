@@ -32,8 +32,8 @@ export function GuideView() {
           ))}
         </ol>
         <p className="tj-guide-links">
-          Keep the ZIP private: it can contain IP addresses and private-session details. Guides:
-          support.spotify.com -{' '}
+          Keep the ZIP private: it can contain IP addresses and private-session details. Official
+          Spotify guides:{' '}
           <a href="https://support.spotify.com/us/article/data-rights-and-privacy-settings/" target="_blank" rel="noreferrer">
             Data rights and privacy settings
           </a>{' '}

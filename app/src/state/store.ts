@@ -37,6 +37,7 @@ interface AppState {
   setMonth: (m: string) => void;
   setPlaying: (p: boolean) => void;
   toggleCardBit: (k: keyof CardBits) => void;
+  clearError: () => void;
   reset: () => void;
 }
 
@@ -155,6 +156,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setPlaying: (playing) => set({ playing }),
   toggleCardBit: (k) => set((s) => ({ cardBits: { ...s.cardBits, [k]: !s.cardBits[k] } })),
 
+  clearError: () => set({ error: null }),
   reset: () => {
     matchAbort?.abort();
     set({

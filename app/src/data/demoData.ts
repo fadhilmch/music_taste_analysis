@@ -9,6 +9,8 @@ import type { ArtistGenre, PlayAggregate, PlayEvent } from './types';
 
 interface DemoArtist {
   name: string;
+  /** Fictional origin, same shape as MusicBrainz data. null = no origin on record. */
+  origin: { country: string | null; area: string | null } | null;
   group: string | null; // null = stays uncategorized
   tags: string[];
   peak: number;         // month index (0 = May 2024)
@@ -25,15 +27,15 @@ export const DEMO_MONTH_START = { year: 2024, month: 4 }; // May 2024, 0-based m
 export const DEMO_MONTH_COUNT = 30; // through Oct 2026
 
 const DEMO_ARTISTS: DemoArtist[] = [
-  { name: 'Senja Radio', group: 'Folk & acoustic', tags: ['indie folk', 'acoustic'], peak: 2, spread: 3.5, tracks: ['Kopi Pagi', 'Senja Drive', 'Golden Hour, Slow'] },
-  { name: 'Monochrome Club', group: 'Rock', tags: ['indie rock', 'alternative rock'], peak: 6, spread: 4, tracks: ['Velvet Static', 'Rooftop Letters', 'Grey Avenue'] },
-  { name: 'Kota Lights', group: 'Electronic', tags: ['synth-pop', 'electropop'], peak: 11, spread: 3.5, tracks: ['Neon Sahur', 'City of Sparks', 'Midnight Commute'] },
-  { name: 'Pantai Ensemble', group: 'Folk & acoustic', tags: ['acoustic', 'folk'], peak: 15, spread: 3, tracks: ['Kartika', 'Tide Lines', 'Salt & Strings'] },
-  { name: 'Voltage Park', group: 'Rock', tags: ['rock', 'hard rock'], peak: 19, spread: 3.5, tracks: ['Overdrive', 'Midnight Sprint', 'Redline'] },
-  { name: 'Arunika', group: 'Folk & acoustic', tags: ['singer-songwriter', 'acoustic'], peak: 23, spread: 3, tracks: ['Paper Boats', 'First Light', 'Harbor'] },
-  { name: 'DJ Rantai', group: 'Electronic', tags: ['house', 'dance'], peak: 26, spread: 2.5, tracks: ['Bassline Carousel', 'Final Drop', 'Chain Reaction'] },
-  { name: 'June Harbor', group: 'Ambient & classical', tags: ['ambient', 'piano'], peak: 29, spread: 2.5, tracks: ['Tea at Dawn', 'Wool Sweater', 'Quiet Season'] },
-  { name: 'Lost Cartographer', group: null, tags: [], peak: 14, spread: 9, tracks: ['Unmapped', 'No Signal'] },
+  { name: 'Senja Radio', origin: { country: 'ID', area: 'Jakarta, Indonesia' }, group: 'Folk & acoustic', tags: ['indie folk', 'acoustic'], peak: 2, spread: 3.5, tracks: ['Kopi Pagi', 'Senja Drive', 'Golden Hour, Slow'] },
+  { name: 'Monochrome Club', origin: { country: 'GB', area: 'Manchester, United Kingdom' }, group: 'Rock', tags: ['indie rock', 'alternative rock'], peak: 6, spread: 4, tracks: ['Velvet Static', 'Rooftop Letters', 'Grey Avenue'] },
+  { name: 'Kota Lights', origin: { country: 'ID', area: 'Bandung, Indonesia' }, group: 'Electronic', tags: ['synth-pop', 'electropop'], peak: 11, spread: 3.5, tracks: ['Neon Sahur', 'City of Sparks', 'Midnight Commute'] },
+  { name: 'Pantai Ensemble', origin: { country: 'ID', area: 'Yogyakarta, Indonesia' }, group: 'Folk & acoustic', tags: ['acoustic', 'folk'], peak: 15, spread: 3, tracks: ['Kartika', 'Tide Lines', 'Salt & Strings'] },
+  { name: 'Voltage Park', origin: { country: 'US', area: 'Austin, United States' }, group: 'Rock', tags: ['rock', 'hard rock'], peak: 19, spread: 3.5, tracks: ['Overdrive', 'Midnight Sprint', 'Redline'] },
+  { name: 'Arunika', origin: { country: 'ID', area: 'Surabaya, Indonesia' }, group: 'Folk & acoustic', tags: ['singer-songwriter', 'acoustic'], peak: 23, spread: 3, tracks: ['Paper Boats', 'First Light', 'Harbor'] },
+  { name: 'DJ Rantai', origin: { country: 'ID', area: 'Jakarta, Indonesia' }, group: 'Electronic', tags: ['house', 'dance'], peak: 26, spread: 2.5, tracks: ['Bassline Carousel', 'Final Drop', 'Chain Reaction'] },
+  { name: 'June Harbor', origin: { country: 'SE', area: 'Stockholm, Sweden' }, group: 'Ambient & classical', tags: ['ambient', 'piano'], peak: 29, spread: 2.5, tracks: ['Tea at Dawn', 'Wool Sweater', 'Quiet Season'] },
+  { name: 'Lost Cartographer', origin: { country: null, area: null }, group: null, tags: [], peak: 14, spread: 9, tracks: ['Unmapped', 'No Signal'] },
 ];
 
 function mulberry32(seed: number) {
@@ -97,7 +99,7 @@ export function buildDemoAggregates(): PlayAggregate[] {
 export const DEMO_GENRES: Record<string, ArtistGenre> = Object.fromEntries(
   DEMO_ARTISTS.filter((a) => a.group).map((a) => [
     a.name,
-    { groups: [a.group as string], tags: a.tags, source: 'demo' as const, matchedName: a.name },
+    { groups: [a.group as string], tags: a.tags, source: 'demo' as const, matchedName: a.name, origin: a.origin ?? undefined },
   ]),
 );
 

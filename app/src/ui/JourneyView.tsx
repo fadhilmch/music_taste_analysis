@@ -22,18 +22,18 @@ export function JourneyView({ months, aggs }: { months: MonthBucket[]; aggs: Pla
 
   return (
     <>
-      <section className="tj-panel" aria-labelledby="tj-journey-h">
-        <div className="tj-panel-head">
+      <section className="tj-section" aria-labelledby="tj-journey-h">
+        <div className="tj-section-head">
           <h3 id="tj-journey-h">Listening over time</h3>
           <p>{fmtMinutes(total)} - {rangeLabel}</p>
         </div>
         <div className="tj-chart" role="img" aria-label="Monthly listening minutes">
-          {months.map((m) => (
+          {months.map((m, i) => (
             <button
               key={m.key}
               type="button"
               className={'tj-bar' + (m.key === cur?.key ? ' is-on' : '') + (rangeKeys.has(m.key) ? '' : ' is-dim')}
-              style={{ height: `${Math.max(6, (m.minutes / maxMin) * 100)}%` }}
+              style={{ height: `${Math.max(6, (m.minutes / maxMin) * 100)}%`, animationDelay: `${Math.min(i, 30) * 14}ms` }}
               onClick={() => { setMonth(m.key); setPlaying(false); }}
               aria-label={`${m.label}, ${fmtMinutes(m.minutes)}`}
             />
@@ -46,8 +46,8 @@ export function JourneyView({ months, aggs }: { months: MonthBucket[]; aggs: Pla
       </section>
 
       {cur && (
-        <section className="tj-panel" aria-labelledby="tj-month-h">
-          <div className="tj-panel-head">
+        <section className="tj-section" aria-labelledby="tj-month-h">
+          <div className="tj-section-head">
             <h3 id="tj-month-h">{cur.label}</h3>
             <p>{fmtMinutes(cur.minutes)}</p>
           </div>
@@ -68,8 +68,8 @@ export function JourneyView({ months, aggs }: { months: MonthBucket[]; aggs: Pla
         </section>
       )}
 
-      <section className="tj-panel" aria-labelledby="tj-eras-h">
-        <div className="tj-panel-head">
+      <section className="tj-section" aria-labelledby="tj-eras-h">
+        <div className="tj-section-head">
           <h3 id="tj-eras-h">Artist eras</h3>
           <p>Who defined each stretch</p>
         </div>

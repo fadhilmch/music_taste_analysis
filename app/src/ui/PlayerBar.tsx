@@ -26,6 +26,7 @@ export function PlayerBar({ months, aggs }: { months: MonthBucket[]; aggs: PlayA
           max={months.length - 1}
           value={idx}
           aria-label="Scrub through months"
+          aria-valuetext={cur.label}
           onChange={(e) => { setMonth(months[Number(e.target.value)].key); setPlaying(false); }}
         />
       </div>

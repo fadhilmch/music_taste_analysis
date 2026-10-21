@@ -23,13 +23,37 @@ const RANGES = [
 const TABS: Array<[View, string]> = [
   ['journey', 'Journey'],
   ['story', 'Story'],
-  ['map', 'Map'],
-  ['genres', 'Genres'],
+  ['map', 'World'],
+  ['genres', 'Spectrum'],
   ['artists', 'Artists'],
   ['tracks', 'Tracks'],
   ['share', 'Share'],
   ['guide', 'Guide'],
 ];
+
+/** One honest line per view - editorial headers instead of filler cards. */
+const VIEW_HEADS: Partial<Record<View, { title: string; blurb: string }>> = {
+  journey: {
+    title: 'Your listening, month by month',
+    blurb: 'Minutes over time, who led each month, and the eras between them.',
+  },
+  story: {
+    title: 'Your story in chapters',
+    blurb: 'Eras, discoveries, sessions and habits - computed from your plays, nothing invented.',
+  },
+  share: {
+    title: 'Share a card',
+    blurb: 'A PNG drawn on this device. You choose what it shows; nothing is uploaded.',
+  },
+  map: {
+    title: 'Travel the world through your music',
+    blurb: 'Every artist you play comes from somewhere. Follow where your listening has taken you.',
+  },
+  genres: {
+    title: 'Your genre spectrum',
+    blurb: 'The mix of what you listen to, how it moves over time, and what sits inside each group.',
+  },
+};
 
 export default function App() {
   const source = useAppStore((s) => s.source);
@@ -37,6 +61,7 @@ export default function App() {
   const error = useAppStore((s) => s.error);
   const aggregates = useAppStore((s) => s.aggregates);
   const parseInfo = useAppStore((s) => s.parseInfo);
+  const clearError = useAppStore((s) => s.clearError);
   const view = useAppStore((s) => s.view);
   const setView = useAppStore((s) => s.setView);
   const range = useAppStore((s) => s.range);
@@ -88,9 +113,16 @@ export default function App() {
           <SourceBar />
 
           {loading && <LoadingState label="Reading your export in this tab - nothing is uploaded." />}
-          {error && <ErrorState title="That file did not work" detail={error} />}
+          {error && (
+            <ErrorState
+              title="That file did not work"
+              detail={error + (source !== null ? ' Nothing was replaced - the data you were viewing is still loaded.' : '')}
+              onRetry={clearError}
+              retryLabel={source === 'export' ? 'Back to your export' : source === 'demo' ? 'Back to demo data' : 'Back to start'}
+            />
+          )}
 
-          {view === 'guide' && <GuideView />}
+          {!loading && !error && view === 'guide' && <GuideView />}
 
           {!loading && !error && view !== 'guide' && source === null && (
             <Onboarding />
@@ -117,6 +149,12 @@ export default function App() {
                   </button>
                 ))}
               </div>
+              {VIEW_HEADS[view] && (
+                <header className="tj-viewhead">
+                  <h2>{VIEW_HEADS[view]!.title}</h2>
+                  <p>{VIEW_HEADS[view]!.blurb}</p>
+                </header>
+              )}
               {view === 'journey' && <JourneyView months={months} aggs={aggregates} />}
               {view === 'story' && <StoryView months={months} aggs={aggregates} />}
               {view === 'map' && <MapView months={months} aggs={aggregates} />}
