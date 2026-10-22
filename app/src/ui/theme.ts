@@ -1,10 +1,10 @@
 /** Stable display colors for genre groups and artists. */
 export const GROUP_HUES: Record<string, number> = {
-  'Rock': 4,
-  'Pop': 300,
-  'Electronic': 96,
+  Rock: 4,
+  Pop: 300,
+  Electronic: 96,
   'R&B & soul': 262,
-  'Jazz': 210,
+  Jazz: 210,
   'Folk & acoustic': 160,
   'Ambient & classical': 190,
   'Hip-hop': 46,

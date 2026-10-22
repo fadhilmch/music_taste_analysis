@@ -7,17 +7,32 @@ export function LoadingState({ label }: { label: string }) {
   );
 }
 
-export function ErrorState({ title, detail, onRetry, retryLabel }: { title: string; detail?: string; onRetry?: () => void; retryLabel?: string }) {
+export function ErrorState({
+  title,
+  detail,
+  onRetry,
+  retryLabel,
+}: {
+  title: string;
+  detail?: string;
+  onRetry?: () => void;
+  retryLabel?: string;
+}) {
   return (
     <div className="tj-state tj-state-error" role="alert">
       <p className="tj-state-title">{title}</p>
       {detail && <p className="tj-state-detail">{detail}</p>}
-      {onRetry && <button type="button" className="tj-btn" onClick={onRetry}>{retryLabel ?? 'Try again'}</button>}
+      {onRetry && (
+        <Button className="self-center!" onClick={onRetry}>
+          {retryLabel ?? 'Try again'}
+        </Button>
+      )}
     </div>
   );
 }
 
 import React from 'react';
+import { Button, FileInput, Kicker } from './primitives';
 import { useAppStore } from '../state/store';
 
 export function Onboarding() {
@@ -28,30 +43,21 @@ export function Onboarding() {
 
   return (
     <div className="tj-onboard">
-      <p className="tj-kicker">Private - runs in your browser</p>
+      <Kicker>Private - runs in your browser</Kicker>
       <p className="tj-onboard-title">Your listening, turned into a journey.</p>
       <p className="tj-onboard-body">
-        Take the demo for a spin, or drop in your own Spotify streaming history JSON.
-        Your file is read in this tab only - nothing is uploaded.
+        Take the demo for a spin, or drop in your own Spotify streaming history JSON. Your file is read in
+        this tab only - nothing is uploaded.
       </p>
       <div className="tj-onboard-actions">
-        <button type="button" className="tj-btn" onClick={loadDemo}>
-          Try the demo journey
-        </button>
-        <button type="button" className="tj-btn tj-btn-ghost" onClick={() => inputRef.current?.click()}>
+        <Button onClick={loadDemo}>Try the demo journey</Button>
+        <Button variant="ghost" onClick={() => inputRef.current?.click()}>
           Import your export
-        </button>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".json,application/json"
-          className="tj-fileinput"
-          aria-label="Choose a Spotify streaming history JSON file"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) void loadFile(f);
-            e.target.value = '';
-          }}
+        </Button>
+        <FileInput
+          inputRef={inputRef}
+          label="Choose a Spotify streaming history JSON file"
+          onFile={(f) => void loadFile(f)}
         />
       </div>
       <button type="button" className="tj-guidelink" onClick={() => setView('guide')}>

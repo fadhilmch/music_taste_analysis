@@ -1,0 +1,28 @@
+/* Design tokens: the single source of truth for color. @theme feeds Tailwind
+   utilities (bg-panel, text-txt-2, ...) used by the shared primitives; the
+   .tj mirror below feeds the remaining bespoke .tj-* visualization CSS. */
+@theme {
+  --color-green: #1db954;
+  --color-green-soft: #1ed760;
+  --color-ink: #0e0e10;
+  --color-panel: #161619;
+  --color-panel-2: #1e1e22;
+  --color-line: #2a2a30;
+  --color-txt: #f4f4f5;
+  --color-txt-2: #a7a7ad;
+}
+
+@layer components {
+  /* Custom-property mirror of the Tailwind theme tokens above, scoped to the
+     app root so legacy .tj-* rules and inline var() references keep working. */
+  .tj {
+    --green: #1db954;
+    --green-soft: #1ed760;
+    --bg: #0e0e10;
+    --panel: #161619;
+    --panel-2: #1e1e22;
+    --line: #2a2a30;
+    --txt: #f4f4f5;
+    --txt-2: #a7a7ad;
+  }
+}

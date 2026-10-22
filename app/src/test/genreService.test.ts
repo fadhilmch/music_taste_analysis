@@ -19,13 +19,31 @@ describe('normalizeArtistName', () => {
 
 describe('lookupArtistGenre', () => {
   it('returns grouped tags on an exact name match', async () => {
-    const g = await lookupArtistGenre('Tom Misch', mockFetch({
-      artists: [{ name: 'Tom Misch', tags: [{ name: 'neo soul', count: 10 }, { name: 'jazz-funk', count: 5 }] }],
-    }));
-    expect(g).toMatchObject({ groups: ['R&B & soul', 'Jazz'], source: 'musicbrainz', matchedName: 'Tom Misch' });
+    const g = await lookupArtistGenre(
+      'Tom Misch',
+      mockFetch({
+        artists: [
+          {
+            name: 'Tom Misch',
+            tags: [
+              { name: 'neo soul', count: 10 },
+              { name: 'jazz-funk', count: 5 },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(g).toMatchObject({
+      groups: ['R&B & soul', 'Jazz'],
+      source: 'musicbrainz',
+      matchedName: 'Tom Misch',
+    });
   });
   it('rejects a fuzzy name mismatch', async () => {
-    const g = await lookupArtistGenre('HONNE', mockFetch({ artists: [{ name: 'Lb Honne', tags: [{ name: 'electronic', count: 3 }] }] }));
+    const g = await lookupArtistGenre(
+      'HONNE',
+      mockFetch({ artists: [{ name: 'Lb Honne', tags: [{ name: 'electronic', count: 3 }] }] }),
+    );
     expect(g).toBeNull();
   });
   it('returns null when no usable tags exist', async () => {
@@ -40,7 +58,13 @@ describe('lookupArtistGenre', () => {
 describe('matchArtists', () => {
   it('uses the cache on the second run and reports progress', async () => {
     const store = new Map<string, unknown>();
-    const cache = { get: async (k: string) => store.get(k), set: async (k: string, v: unknown) => { store.set(k, v); return v; } };
+    const cache = {
+      get: async (k: string) => store.get(k),
+      set: async (k: string, v: unknown) => {
+        store.set(k, v);
+        return v;
+      },
+    };
     const fetcher = mockFetch({ artists: [{ name: 'A', tags: [{ name: 'rock', count: 1 }] }] });
     const progress: number[] = [];
     const opts = { cache, fetcher, rateMs: 0, sleepFn: noDelay, onProgress: (d: number) => progress.push(d) };
@@ -54,12 +78,22 @@ describe('matchArtists', () => {
   });
   it('retries on 503 then succeeds', async () => {
     const store = new Map<string, unknown>();
-    const cache = { get: async (k: string) => store.get(k), set: async (k: string, v: unknown) => { store.set(k, v); return v; } };
+    const cache = {
+      get: async (k: string) => store.get(k),
+      set: async (k: string, v: unknown) => {
+        store.set(k, v);
+        return v;
+      },
+    };
     let calls = 0;
     const fetcher = vi.fn(async () => {
       calls += 1;
       if (calls === 1) return { ok: false, status: 503, json: async () => ({}) };
-      return { ok: true, status: 200, json: async () => ({ artists: [{ name: 'A', tags: [{ name: 'pop', count: 1 }] }] }) };
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ artists: [{ name: 'A', tags: [{ name: 'pop', count: 1 }] }] }),
+      };
     }) as unknown as typeof fetch;
     const out = await matchArtists(['A'], { cache, fetcher, rateMs: 0, sleepFn: noDelay });
     expect(out.A.groups).toEqual(['Pop']);

@@ -1,4 +1,11 @@
-import { COUNTRY_INFO, WORLD_COUNTRIES, WORLD_H, WORLD_SPHERE, WORLD_W, type WorldCountry } from './worldData';
+import {
+  COUNTRY_INFO,
+  WORLD_COUNTRIES,
+  WORLD_H,
+  WORLD_SPHERE,
+  WORLD_W,
+  type WorldCountry,
+} from './worldData';
 
 /**
  * World geography, rendered fully offline from precomputed Natural Earth

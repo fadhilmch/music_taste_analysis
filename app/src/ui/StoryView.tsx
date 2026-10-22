@@ -1,11 +1,22 @@
 import React from 'react';
 import {
-  chapters, discoveries, filterToMonths, fmtMinutes, hourHistogram, mixStats, monthLabel, rangeMonthKeys, sessions, skipStats, weekdayHistogram,
+  chapters,
+  discoveries,
+  filterToMonths,
+  fmtMinutes,
+  hourHistogram,
+  mixStats,
+  monthLabel,
+  rangeMonthKeys,
+  sessions,
+  skipStats,
+  weekdayHistogram,
 } from '../data/stats';
 import type { Chapter, MonthBucket, PlayAggregate } from '../data/types';
 import type { DiscoveryStats } from '../data/stats';
 import { useAppStore } from '../state/store';
 import { artistBackground } from './theme';
+import { Button, Card, CardAside } from './primitives';
 
 const KIND_LABEL: Record<Chapter['kind'], string> = {
   first: 'First obsession',
@@ -52,7 +63,12 @@ function ClockDial({ hours, onScrub }: { hours: number[]; onScrub?: (h: number) 
   const shown = sel ?? peak;
   return (
     <div className="tj-clock-wrap">
-      <svg className="tj-clock" viewBox="0 0 240 240" role="img" aria-label="Listening clock: minutes per hour of day, midnight at top">
+      <svg
+        className="tj-clock"
+        viewBox="0 0 240 240"
+        role="img"
+        aria-label="Listening clock: minutes per hour of day, midnight at top"
+      >
         {hours.map((v, h) => {
           const rOut = CLOCK_R0 + (CLOCK_R1 - CLOCK_R0) * Math.sqrt(v / max);
           const isPeak = h === peak;
@@ -67,14 +83,22 @@ function ClockDial({ hours, onScrub }: { hours: number[]; onScrub?: (h: number) 
               data-hour={h}
               role="button"
               aria-label={`${hourLabel(h)}: ${fmtMinutes(v)}. Arrow keys move between hours.`}
-              onClick={() => { setSel(isSel ? null : h); onScrub?.(h); }}
+              onClick={() => {
+                setSel(isSel ? null : h);
+                onScrub?.(h);
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   setSel(isSel ? null : h);
                   return;
                 }
-                const dir = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+                const dir =
+                  e.key === 'ArrowRight' || e.key === 'ArrowDown'
+                    ? 1
+                    : e.key === 'ArrowLeft' || e.key === 'ArrowUp'
+                      ? -1
+                      : 0;
                 if (dir !== 0) {
                   e.preventDefault();
                   const nh = (h + dir + 24) % 24;
@@ -92,22 +116,34 @@ function ClockDial({ hours, onScrub }: { hours: number[]; onScrub?: (h: number) 
         })}
         {[0, 6, 12, 18].map((h) => {
           const [x, y] = clockPolar(CLOCK_R1 + 12, h + 0.5);
-          return <text key={`t-${h}`} className="tj-clock-tick" x={x} y={y + 3}>{h}</text>;
+          return (
+            <text key={`t-${h}`} className="tj-clock-tick" x={x} y={y + 3}>
+              {h}
+            </text>
+          );
         })}
-        <text className="tj-clock-center" x={CLOCK_C} y={CLOCK_C - 10}>{hourLabel(shown)}</text>
+        <text className="tj-clock-center" x={CLOCK_C} y={CLOCK_C - 10}>
+          {hourLabel(shown)}
+        </text>
         {sel === null ? (
-          <text className="tj-clock-center tj-clock-sub" x={CLOCK_C} y={CLOCK_C + 10}>peak hour</text>
+          <text className="tj-clock-center tj-clock-sub" x={CLOCK_C} y={CLOCK_C + 10}>
+            peak hour
+          </text>
         ) : (
           <>
-            <text className="tj-clock-center tj-clock-sub" x={CLOCK_C} y={CLOCK_C + 7}>{fmtMinutes(hours[shown])}</text>
-            <text className="tj-clock-center tj-clock-sub" x={CLOCK_C} y={CLOCK_C + 21}>{Math.round((hours[shown] / Math.max(1, total)) * 100)}% of listening</text>
+            <text className="tj-clock-center tj-clock-sub" x={CLOCK_C} y={CLOCK_C + 7}>
+              {fmtMinutes(hours[shown])}
+            </text>
+            <text className="tj-clock-center tj-clock-sub" x={CLOCK_C} y={CLOCK_C + 21}>
+              {Math.round((hours[shown] / Math.max(1, total)) * 100)}% of listening
+            </text>
           </>
         )}
       </svg>
       <p className="tj-note">
-        A whole day on one dial: midnight at the top, noon at the bottom, one wedge per hour.
-        Longer wedges mean more minutes - square-root scaled so quiet hours stay visible.
-        Tap an hour for its exact figures{sel !== null ? ` - ${hourLabel(sel)} selected` : ''}.
+        A whole day on one dial: midnight at the top, noon at the bottom, one wedge per hour. Longer wedges
+        mean more minutes - square-root scaled so quiet hours stay visible. Tap an hour for its exact figures
+        {sel !== null ? ` - ${hourLabel(sel)} selected` : ''}.
       </p>
     </div>
   );
@@ -145,7 +181,11 @@ function DiscoveryBars({ disc, allMonths }: { disc: DiscoveryStats; allMonths: s
               <span className="tj-disc-val">{m.count > 0 && (isSel || isPeak) ? m.count : ''}</span>
               <span
                 className={'tj-disc-bar' + (isPeak ? ' is-peak' : '')}
-                style={{ height: `${Math.max(2, (m.count / max) * 100)}%`, opacity: m.count > 0 ? 0.35 + 0.65 * (m.count / max) : 0.12, animationDelay: `${Math.min(i, 30) * 18}ms` }}
+                style={{
+                  height: `${Math.max(2, (m.count / max) * 100)}%`,
+                  opacity: m.count > 0 ? 0.35 + 0.65 * (m.count / max) : 0.12,
+                  animationDelay: `${Math.min(i, 30) * 18}ms`,
+                }}
               />
               <span className="tj-disc-x">{i % step === 0 ? tick(m.month) : ''}</span>
             </button>
@@ -154,7 +194,9 @@ function DiscoveryBars({ disc, allMonths }: { disc: DiscoveryStats; allMonths: s
       </div>
       {sel && (
         <div className="tj-disc-detail">
-          <h4 className="tj-sub-h">{monthLabel(sel).label} - {selCount} first listen{selCount === 1 ? '' : 's'}</h4>
+          <h4 className="tj-sub-h">
+            {monthLabel(sel).label} - {selCount} first listen{selCount === 1 ? '' : 's'}
+          </h4>
           {selRow && selCount > 0 ? (
             <>
               <ol className="tj-mini">
@@ -167,7 +209,9 @@ function DiscoveryBars({ disc, allMonths }: { disc: DiscoveryStats; allMonths: s
                 ))}
               </ol>
               {selCount > Math.min(selRow.artists.length, 5) && (
-                <p className="tj-note">Plus {selCount - Math.min(selRow.artists.length, 5)} more first heard that month.</p>
+                <p className="tj-note">
+                  Plus {selCount - Math.min(selRow.artists.length, 5)} more first heard that month.
+                </p>
               )}
             </>
           ) : (
@@ -179,7 +223,17 @@ function DiscoveryBars({ disc, allMonths }: { disc: DiscoveryStats; allMonths: s
   );
 }
 
-function MiniBars({ values, labels, ariaLabel, highlightPeak }: { values: number[]; labels: string[]; ariaLabel: string; highlightPeak?: boolean }) {
+function MiniBars({
+  values,
+  labels,
+  ariaLabel,
+  highlightPeak,
+}: {
+  values: number[];
+  labels: string[];
+  ariaLabel: string;
+  highlightPeak?: boolean;
+}) {
   const max = Math.max(1, ...values);
   return (
     <div className="tj-minibars" role="img" aria-label={ariaLabel}>
@@ -187,7 +241,11 @@ function MiniBars({ values, labels, ariaLabel, highlightPeak }: { values: number
         <div key={labels[i]} className="tj-minibar-col">
           <div
             className={'tj-minibar' + (highlightPeak && v === max && v > 0 ? ' is-peak' : '')}
-            style={{ height: `${Math.max(3, (v / max) * 100)}%`, opacity: v > 0 ? 0.35 + 0.65 * (v / max) : 0.15, animationDelay: `${i * 30}ms` }}
+            style={{
+              height: `${Math.max(3, (v / max) * 100)}%`,
+              opacity: v > 0 ? 0.35 + 0.65 * (v / max) : 0.15,
+              animationDelay: `${i * 30}ms`,
+            }}
           />
           <span className="tj-minibar-x">{labels[i]}</span>
         </div>
@@ -228,14 +286,10 @@ export function StoryView({ months, aggs }: { months: MonthBucket[]; aggs: PlayA
 
   return (
     <>
-      <section className="tj-panel" aria-labelledby="tj-chapters-h">
-        <div className="tj-panel-head">
-          <h3 id="tj-chapters-h">Chapters</h3>
-          <button type="button" className="tj-btn" onClick={playStory}>Play the story</button>
-        </div>
+      <Card id="tj-chapters-h" title="Chapters" aside={<Button onClick={playStory}>Play the story</Button>}>
         <p className="tj-note">
-          Chapters are stretches where one artist led your listening. Labels come only from
-          your minutes - nothing is invented. Playing scrubs the timeline from chapter one.
+          Chapters are stretches where one artist led your listening. Labels come only from your minutes -
+          nothing is invented. Playing scrubs the timeline from chapter one.
         </p>
         <ol className="tj-chapters">
           {ch.map((c, i) => (
@@ -243,13 +297,20 @@ export function StoryView({ months, aggs }: { months: MonthBucket[]; aggs: PlayA
               <button
                 type="button"
                 className="tj-chapter"
-                onClick={() => { setMonth(c.from); setPlaying(false); setView('journey'); }}
+                onClick={() => {
+                  setMonth(c.from);
+                  setPlaying(false);
+                  setView('journey');
+                }}
                 aria-label={`Chapter ${i + 1}: ${c.artist}, ${monthLabel(c.from).label} to ${monthLabel(c.to).label}`}
               >
                 <span className="tj-chapter-num">{i + 1}</span>
                 <span className="tj-thumb" style={{ background: artistBackground(c.artist) }} />
                 <span className="tj-chapter-body">
-                  <span className="tj-chapter-kind">{KIND_LABEL[c.kind]}{c.current ? ' - where you are now' : ''}</span>
+                  <span className="tj-chapter-kind">
+                    {KIND_LABEL[c.kind]}
+                    {c.current ? ' - where you are now' : ''}
+                  </span>
                   <span className="tj-chapter-artist">{c.artist}</span>
                   <span className="tj-chapter-meta">
                     {monthLabel(c.from).label} - {monthLabel(c.to).label} · {fmtMinutes(c.minutes)} ·{' '}
@@ -261,13 +322,13 @@ export function StoryView({ months, aggs }: { months: MonthBucket[]; aggs: PlayA
             </li>
           ))}
         </ol>
-      </section>
+      </Card>
 
-      <section className="tj-panel" aria-labelledby="tj-clock-h">
-        <div className="tj-panel-head">
-          <h3 id="tj-clock-h">Listening clock</h3>
-          <p>{events.length > 0 ? `Peak: ${hourLabel(peakHour)}` : ''}</p>
-        </div>
+      <Card
+        id="tj-clock-h"
+        title="Listening clock"
+        aside={<CardAside>{events.length > 0 ? `Peak: ${hourLabel(peakHour)}` : ''}</CardAside>}
+      >
         {events.length > 0 ? (
           <>
             <ClockDial hours={clock} />
@@ -277,29 +338,44 @@ export function StoryView({ months, aggs }: { months: MonthBucket[]; aggs: PlayA
         ) : (
           <p className="tj-note">Per-play timestamps appear here once an export is loaded.</p>
         )}
-      </section>
+      </Card>
 
-      <section className="tj-panel" aria-labelledby="tj-disc-h">
-        <div className="tj-panel-head">
-          <h3 id="tj-disc-h">Discoveries</h3>
-          <p>{disc.totalArtists} artists on record</p>
-        </div>
+      <Card
+        id="tj-disc-h"
+        title="Discoveries"
+        aside={<CardAside>{disc.totalArtists} artists on record</CardAside>}
+      >
         <DiscoveryBars disc={disc} allMonths={months.map((m) => m.key)} />
-        <p className="tj-note">First-ever listens are counted across your full history, whatever range is picked above - empty months simply had no new artists. Tap a month to see who arrived then.</p>
+        <p className="tj-note">
+          First-ever listens are counted across your full history, whatever range is picked above - empty
+          months simply had no new artists. Tap a month to see who arrived then.
+        </p>
         <ul className="tj-facts">
-          <li><strong>{disc.keepers}</strong> keepers - heard in at least three different months</li>
-          <li><strong>{disc.oneMonthWonders}</strong> one-month wonders - heard in a single month</li>
+          <li>
+            <strong>{disc.keepers}</strong> keepers - heard in at least three different months
+          </li>
+          <li>
+            <strong>{disc.oneMonthWonders}</strong> one-month wonders - heard in a single month
+          </li>
           {disc.latest.length > 0 && (
-            <li>Latest first-listens: {disc.latest.slice(0, 3).map((l) => l.artist).join(', ')}</li>
+            <li>
+              Latest first-listens:{' '}
+              {disc.latest
+                .slice(0, 3)
+                .map((l) => l.artist)
+                .join(', ')}
+            </li>
           )}
         </ul>
-      </section>
+      </Card>
 
-      <section className="tj-panel" aria-labelledby="tj-skip-h">
-        <div className="tj-panel-head">
-          <h3 id="tj-skip-h">Skips and sessions</h3>
-          {skips.hasFlags && <p>{Math.round(skips.rate * 100)}% of plays skipped</p>}
-        </div>
+      <Card
+        id="tj-skip-h"
+        title="Skips and sessions"
+        aside={
+          skips.hasFlags ? <CardAside>{Math.round(skips.rate * 100)}% of plays skipped</CardAside> : undefined
+        }
+      >
         {skips.hasFlags ? (
           <>
             {skips.byArtist.length > 0 && (
@@ -319,46 +395,61 @@ export function StoryView({ months, aggs }: { months: MonthBucket[]; aggs: PlayA
             </p>
           </>
         ) : (
-          <p className="tj-note">This file carries no skip flags (older exports don&apos;t), so skip stats stay blank rather than guessed.</p>
+          <p className="tj-note">
+            This file carries no skip flags (older exports don&apos;t), so skip stats stay blank rather than
+            guessed.
+          </p>
         )}
         {sess.count > 0 && (
           <ul className="tj-facts">
-            <li><strong>{sess.count.toLocaleString()}</strong> listening sessions (a gap of 30+ minutes splits them)</li>
-            <li>Longest session: <strong>{fmtMinutes(sess.longestMin)}</strong> across <strong>{sess.activeDays.toLocaleString()}</strong> active days</li>
+            <li>
+              <strong>{sess.count.toLocaleString()}</strong> listening sessions (a gap of 30+ minutes splits
+              them)
+            </li>
+            <li>
+              Longest session: <strong>{fmtMinutes(sess.longestMin)}</strong> across{' '}
+              <strong>{sess.activeDays.toLocaleString()}</strong> active days
+            </li>
           </ul>
         )}
-      </section>
+      </Card>
 
       {(mix.shuffleShare !== null || mix.platforms.length > 0) && (
-        <section className="tj-panel" aria-labelledby="tj-mix-h2">
-          <div className="tj-panel-head">
-            <h3 id="tj-mix-h2">How you listened</h3>
-          </div>
+        <Card id="tj-mix-h2" title="How you listened">
           <ul className="tj-facts">
-            {mix.shuffleShare !== null && <li>Shuffle on for <strong>{Math.round(mix.shuffleShare * 100)}%</strong> of flagged plays</li>}
-            {mix.offlineShare !== null && <li><strong>{Math.round(mix.offlineShare * 100)}%</strong> of flagged plays were offline</li>}
+            {mix.shuffleShare !== null && (
+              <li>
+                Shuffle on for <strong>{Math.round(mix.shuffleShare * 100)}%</strong> of flagged plays
+              </li>
+            )}
+            {mix.offlineShare !== null && (
+              <li>
+                <strong>{Math.round(mix.offlineShare * 100)}%</strong> of flagged plays were offline
+              </li>
+            )}
             {mix.platforms.length > 0 && (
               <li>
-                By minutes: {mix.platforms.slice(0, 4).map((p) => `${p.name} ${Math.round(p.share * 100)}%`).join(' · ')}
+                By minutes:{' '}
+                {mix.platforms
+                  .slice(0, 4)
+                  .map((p) => `${p.name} ${Math.round(p.share * 100)}%`)
+                  .join(' · ')}
               </li>
             )}
           </ul>
-        </section>
+        </Card>
       )}
 
-      <section className="tj-panel tj-narrator" aria-labelledby="tj-narr-h">
-        <div className="tj-panel-head">
-          <h3 id="tj-narr-h">Narration - not enabled yet</h3>
-        </div>
+      <Card id="tj-narr-h" title="Narration - not enabled yet" className="border-dashed border-white/[0.14]!">
         <p className="tj-note">
-          A narrator could turn these computed facts into written chapters and answers. Two routes
-          are possible: a small model that runs inside this browser (free and private, but needs a
-          multi-GB download and a recent device), or a hosted API (stronger writing, costs money,
-          and sends only a computed fact sheet - never your raw export - to a third party).
-          Neither is wired up. Nothing is downloaded, shared, or paid for from this app; choosing
-          a route is a conversation, not a setting here.
+          A narrator could turn these computed facts into written chapters and answers. Two routes are
+          possible: a small model that runs inside this browser (free and private, but needs a multi-GB
+          download and a recent device), or a hosted API (stronger writing, costs money, and sends only a
+          computed fact sheet - never your raw export - to a third party). Neither is wired up. Nothing is
+          downloaded, shared, or paid for from this app; choosing a route is a conversation, not a setting
+          here.
         </p>
-      </section>
+      </Card>
     </>
   );
 }

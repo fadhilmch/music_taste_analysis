@@ -8,7 +8,13 @@ import type { ArtistGenre, PlayAggregate, PlayEvent, View } from '../data/types'
 export type Source = 'demo' | 'export' | null;
 export type MatchState = 'idle' | 'matching' | 'done' | 'error';
 
-export interface CardBits { artist: boolean; track: boolean; minutes: boolean; genre: boolean; eras: boolean; }
+export interface CardBits {
+  artist: boolean;
+  track: boolean;
+  minutes: boolean;
+  genre: boolean;
+  eras: boolean;
+}
 
 interface AppState {
   source: Source;
@@ -171,9 +177,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   reset: () => {
     matchAbort?.abort();
     set({
-      source: null, fileName: null, parseInfo: null, aggregates: [], events: [], genres: {},
-      genresAreDemo: false, matchState: 'idle', matchProgress: { done: 0, total: 0 },
-      matchError: null, loading: false, error: null, month: null, playing: false,
+      source: null,
+      fileName: null,
+      parseInfo: null,
+      aggregates: [],
+      events: [],
+      genres: {},
+      genresAreDemo: false,
+      matchState: 'idle',
+      matchProgress: { done: 0, total: 0 },
+      matchError: null,
+      loading: false,
+      error: null,
+      month: null,
+      playing: false,
     });
   },
 }));

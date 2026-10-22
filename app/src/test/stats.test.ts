@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { artistEras, buildMonths, coverage, genreMix, monthKeyOfTs, topArtists, topTracks } from '../data/stats';
+import {
+  artistEras,
+  buildMonths,
+  coverage,
+  genreMix,
+  monthKeyOfTs,
+  topArtists,
+  topTracks,
+} from '../data/stats';
 import type { ArtistGenre, PlayAggregate } from '../data/types';
 
 const aggs: PlayAggregate[] = [

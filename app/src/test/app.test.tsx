@@ -33,7 +33,6 @@ describe('App', () => {
     expect(useAppStore.getState().genresAreDemo).toBe(true);
   });
 
-
   it('renders the Story and Map views on demo data', async () => {
     useAppStore.getState().reset();
     const user = userEvent.setup();
@@ -45,7 +44,9 @@ describe('App', () => {
     expect(screen.getAllByText(/First obsession/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Listening clock/i)).toBeInTheDocument();
     // Listening clock: a 24-hour dial; selecting an hour shows its share.
-    expect(screen.getByRole('img', { name: /Listening clock: minutes per hour of day/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: /Listening clock: minutes per hour of day/i }),
+    ).toBeInTheDocument();
     await user.click(screen.getAllByRole('button', { name: /am: |pm: /i })[0]);
     expect(screen.getByText(/% of listening/i)).toBeInTheDocument();
     // Discoveries: tapping a month reveals the artists first heard then.
@@ -54,7 +55,9 @@ describe('App', () => {
     expect(screen.getByText(/Narration - not enabled yet/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'World' }));
-    expect(screen.getByRole('img', { name: /World map with one pin per artist origin country/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: /World map with one pin per artist origin country/i }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Where your music comes from/i)).toBeInTheDocument();
     expect(screen.getByText(/never where you listened/i)).toBeInTheDocument();
     expect(screen.getByText(/no origin on record/i)).toBeInTheDocument();

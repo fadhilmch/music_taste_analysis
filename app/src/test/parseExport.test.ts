@@ -2,11 +2,36 @@ import { describe, expect, it } from 'vitest';
 import { parseStreamingHistory } from '../data/parseExport';
 
 const extended = [
-  { ts: '2024-05-02T10:00:00Z', ms_played: 60000, master_metadata_track_name: 'A', master_metadata_album_artist_name: 'X' },
-  { ts: '2024-05-20T11:00:00Z', ms_played: 120000, master_metadata_track_name: 'A', master_metadata_album_artist_name: 'X' },
-  { ts: '2024-06-01T09:00:00Z', ms_played: 60000, master_metadata_track_name: 'B', master_metadata_album_artist_name: 'Y' },
-  { ts: '2024-06-02T09:00:00Z', ms_played: 60000, master_metadata_track_name: null, master_metadata_album_artist_name: null },
-  { ts: '2024-06-03T09:00:00Z', ms_played: 0, master_metadata_track_name: 'C', master_metadata_album_artist_name: 'Y' },
+  {
+    ts: '2024-05-02T10:00:00Z',
+    ms_played: 60000,
+    master_metadata_track_name: 'A',
+    master_metadata_album_artist_name: 'X',
+  },
+  {
+    ts: '2024-05-20T11:00:00Z',
+    ms_played: 120000,
+    master_metadata_track_name: 'A',
+    master_metadata_album_artist_name: 'X',
+  },
+  {
+    ts: '2024-06-01T09:00:00Z',
+    ms_played: 60000,
+    master_metadata_track_name: 'B',
+    master_metadata_album_artist_name: 'Y',
+  },
+  {
+    ts: '2024-06-02T09:00:00Z',
+    ms_played: 60000,
+    master_metadata_track_name: null,
+    master_metadata_album_artist_name: null,
+  },
+  {
+    ts: '2024-06-03T09:00:00Z',
+    ms_played: 0,
+    master_metadata_track_name: 'C',
+    master_metadata_album_artist_name: 'Y',
+  },
 ];
 
 describe('parseStreamingHistory (extended)', () => {

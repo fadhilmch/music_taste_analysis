@@ -1,8 +1,31 @@
 import type {
-  ArtistGenre, ArtistTotal, Chapter, ChapterKind, Coverage, Era, GenreMix, MonthBucket, PlayAggregate, PlayEvent, TrackTotal,
+  ArtistGenre,
+  ArtistTotal,
+  Chapter,
+  ChapterKind,
+  Coverage,
+  Era,
+  GenreMix,
+  MonthBucket,
+  PlayAggregate,
+  PlayEvent,
+  TrackTotal,
 } from './types';
 
-export const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 export function monthKeyOfTs(ts: string): string {
   return ts.slice(0, 7);
@@ -27,7 +50,10 @@ export function buildMonths(aggs: PlayAggregate[]): MonthBucket[] {
     const { label, short } = monthLabel(key);
     out.push({ key, label, short, minutes: Math.round((byMonth.get(key) ?? 0) / 60000) });
     m += 1;
-    if (m > 12) { m = 1; y += 1; }
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
   }
   return out;
 }
@@ -68,7 +94,10 @@ export function artistEras(months: MonthBucket[], aggs: PlayAggregate[]): Era[] 
   const eras: Era[] = [];
   let cur: Era | null = null;
   for (const mo of months) {
-    const top = topArtists(aggs.filter((a) => a.month === mo.key), 1)[0];
+    const top = topArtists(
+      aggs.filter((a) => a.month === mo.key),
+      1,
+    )[0];
     if (!top) continue;
     if (cur && cur.artist === top.name) {
       cur.to = mo.key;
@@ -179,7 +208,10 @@ export function skipStats(events: PlayEvent[]): SkipStats {
   for (const e of flagged) {
     const cur = by.get(e.artist) ?? { plays: 0, skips: 0 };
     cur.plays += 1;
-    if (e.skipped) { cur.skips += 1; skips += 1; }
+    if (e.skipped) {
+      cur.skips += 1;
+      skips += 1;
+    }
     by.set(e.artist, cur);
   }
   const byArtist = [...by.entries()]
@@ -215,7 +247,9 @@ export function discoveries(aggs: PlayAggregate[]): DiscoveryStats {
   }
   const byMonthMap = new Map<string, number>();
   for (const m of firstMonth.values()) byMonthMap.set(m, (byMonthMap.get(m) ?? 0) + 1);
-  const byMonth = [...byMonthMap.entries()].map(([month, count]) => ({ month, count })).sort((a, b) => a.month.localeCompare(b.month));
+  const byMonth = [...byMonthMap.entries()]
+    .map(([month, count]) => ({ month, count }))
+    .sort((a, b) => a.month.localeCompare(b.month));
   let oneMonthWonders = 0;
   let keepers = 0;
   for (const set of months.values()) {
@@ -247,7 +281,10 @@ export interface SessionStats {
 
 /** Gap-based sessions: a new session starts after 30+ minutes of silence. */
 export function sessions(events: PlayEvent[], gapMin = 30): SessionStats {
-  const times = events.map((e) => new Date(e.ts).getTime()).filter((t) => !Number.isNaN(t)).sort((a, b) => a - b);
+  const times = events
+    .map((e) => new Date(e.ts).getTime())
+    .filter((t) => !Number.isNaN(t))
+    .sort((a, b) => a - b);
   if (times.length === 0) return { count: 0, longestMin: 0, activeDays: 0 };
   let count = 1;
   let longest = 0;
@@ -286,7 +323,8 @@ function platformName(raw: string): string {
 
 export function mixStats(events: PlayEvent[]): MixStats {
   const shuffled = events.filter((e) => e.shuffle !== null);
-  const shuffleShare = shuffled.length > 0 ? shuffled.filter((e) => e.shuffle).length / shuffled.length : null;
+  const shuffleShare =
+    shuffled.length > 0 ? shuffled.filter((e) => e.shuffle).length / shuffled.length : null;
   const off = events.filter((e) => e.offline !== null);
   const offlineShare = off.length > 0 ? off.filter((e) => e.offline).length / off.length : null;
   const byMs = new Map<string, number>();
@@ -297,9 +335,12 @@ export function mixStats(events: PlayEvent[]): MixStats {
     byMs.set(name, (byMs.get(name) ?? 0) + e.ms);
     total += e.ms;
   }
-  const platforms = total > 0
-    ? [...byMs.entries()].map(([name, ms]) => ({ name, share: ms / total })).sort((a, b) => b.share - a.share || a.name.localeCompare(b.name))
-    : [];
+  const platforms =
+    total > 0
+      ? [...byMs.entries()]
+          .map(([name, ms]) => ({ name, share: ms / total }))
+          .sort((a, b) => b.share - a.share || a.name.localeCompare(b.name))
+      : [];
   return { shuffleShare, offlineShare, platforms };
 }
 
@@ -313,7 +354,9 @@ export function chapters(months: MonthBucket[], aggs: PlayAggregate[]): Chapter[
   const seen = new Set<string>();
   const lastKey = months[months.length - 1]?.key;
   return eras.map((e, i) => {
-    const windowMin = months.filter((m) => m.key >= e.from && m.key <= e.to).reduce((s, m) => s + (monthMin.get(m.key) ?? 0), 0);
+    const windowMin = months
+      .filter((m) => m.key >= e.from && m.key <= e.to)
+      .reduce((s, m) => s + (monthMin.get(m.key) ?? 0), 0);
     const share = windowMin > 0 ? e.minutes / windowMin : 0;
     const windowAggs = aggs.filter((a) => a.artist === e.artist && a.month >= e.from && a.month <= e.to);
     const topTrack = topTracks(windowAggs, 1)[0]?.name ?? null;
@@ -323,6 +366,15 @@ export function chapters(months: MonthBucket[], aggs: PlayAggregate[]): Chapter[
     else if (share >= 0.45) kind = 'takeover';
     else kind = 'phase';
     seen.add(e.artist);
-    return { kind, artist: e.artist, from: e.from, to: e.to, minutes: e.minutes, share, topTrack, current: e.to === lastKey && i === eras.length - 1 };
+    return {
+      kind,
+      artist: e.artist,
+      from: e.from,
+      to: e.to,
+      minutes: e.minutes,
+      share,
+      topTrack,
+      current: e.to === lastKey && i === eras.length - 1,
+    };
   });
 }
