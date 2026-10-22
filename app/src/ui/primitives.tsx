@@ -89,7 +89,13 @@ export function Card({
 } & React.HTMLAttributes<HTMLElement>) {
   return (
     <section
-      className={`rounded-2xl border border-white/5 bg-panel px-5 py-[18px] ${animated ? RISE + ' ' : ''}${className}`.trim()}
+      className={[
+        'rounded-2xl border border-white/5 bg-panel px-5 py-[18px]',
+        animated ? RISE : '',
+        className,
+      ]
+        .join(' ')
+        .trim()}
       aria-labelledby={id}
       aria-label={label}
       {...rest}

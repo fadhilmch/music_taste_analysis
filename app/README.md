@@ -124,6 +124,11 @@ Conventions when editing styles:
   (Tailwind v4 important) when an override must beat a base utility in the same group.
 - `Card` plays the `tj-rise` entrance animation by default (matching the old
   direct-child panel rule); pass `animated={false}` for nested panels that never had it.
+- Never glue a class token to a template interpolation (`py-[18px]${...}`): the
+  Tailwind scanner splits on whitespace and silently drops such tokens.
+  `src/test/generatedCss.test.ts` compiles the real entry CSS and scans the real
+  sources to catch omissions, so extend its sentinel list when a primitive adds
+  a load-bearing utility.
 - Breakpoints mirror the legacy CSS: tab collapse at 640px (`max-sm:`), rank-number
   hiding at 400px (`max-[400px]:`).
 
