@@ -1,45 +1,25 @@
-MANIFEST
-build
-dist
-_build
-docs/man/*.gz
-docs/source/api/generated
-docs/source/config.rst
-docs/gh-pages
-notebook/i18n/*/LC_MESSAGES/*.mo
-notebook/i18n/*/LC_MESSAGES/nbjs.json
-notebook/static/components
-notebook/static/style/*.min.css*
-notebook/static/*/js/built/
-notebook/static/*/built/
-notebook/static/built/
-notebook/static/*/js/main.min.js*
-notebook/static/lab/*bundle.js
-node_modules
+# Secrets - never commit
+credential.json
+.env
+.env.*
+*.local
+
+# Python / notebooks
+__pycache__/
 *.py[co]
-__pycache__
-*.egg-info
-*~
-*.bak
-.ipynb_checkpoints
-.tox
-.DS_Store
-\#*#
-.#*
+.ipynb_checkpoints/
+.pytest_cache/
 .coverage
-.pytest_cache
-src
+*.egg-info/
 
+# Node / app build output
+node_modules/
+dist/
+app/tsconfig.tsbuildinfo
+
+# OS / editor
+.DS_Store
 *.swp
-*.map
+*~
 .idea/
-Read the Docs
-config.rst
-*.iml
-/.project
-/.pydevproject
-
-package-lock.json
-geckodriver.log
-*.iml
-credential.jsonapp/tsconfig.tsbuildinfo
+.vscode/
