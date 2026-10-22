@@ -42,8 +42,8 @@ Two data sources, always clearly labeled:
 
 ## Stack and why
 
-- **Vite + React 19 + TypeScript** - fast dev loop, typed data model end to end, tiny
-  production bundle (~55 kB gzip JS). The app is a static site: no backend, no build-time
+- **Vite + React 18 + TypeScript** - fast dev loop, typed data model end to end, self-contained
+  production bundle (~140 kB gzip JS, including the offline world-map dataset). The app is a static site: no backend, no build-time
   secrets.
 - **zustand** - one small store for source/filter state; no boilerplate.
 - **Web Worker** (`src/workers/parseWorker.ts`) - parsing multi-year exports can be tens of
@@ -133,6 +133,8 @@ Conventions when editing styles:
   hiding at 400px (`max-[400px]:`).
 
 ## Development
+
+Requires Node.js 22 (20.19 or newer works; the minimum is declared as `engines` in `package.json`, which npm checks with a warning).
 
 ```sh
 npm install

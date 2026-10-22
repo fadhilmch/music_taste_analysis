@@ -1,0 +1,10 @@
+# Dependencies for the 2019 analysis notebooks (not needed for the app).
+# Install into a virtualenv:  python -m venv .venv && . .venv/bin/activate
+#                             pip install -r requirements-notebooks.txt
+jupyter
+spotipy
+pandas
+numpy
+openpyxl
+matplotlib
+seaborn
