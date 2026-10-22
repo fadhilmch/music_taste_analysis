@@ -9,8 +9,9 @@ import type { ArtistGenre } from './types';
  * - About 1 request/second, sequential, with backoff on 503 (their rate rule).
  * - Results cached persistently in IndexedDB (including misses), so a second
  *   visit makes no repeat calls.
- * - Only artist name -> tags is read; tags are CC BY-NC-SA metadata shown with
- *   credit inside the app. No dataset is bundled or republished.
+ * - Only artist name -> tags + origin area is read; tags are CC BY-NC-SA
+ *   metadata shown with credit inside the app. No dataset is bundled or
+ *   republished.
  * - iTunes is deliberately NOT queried: its published terms do not clearly
  *   cover bulk metadata reuse.
  *
@@ -45,6 +46,8 @@ export function normalizeArtistName(name: string): string {
 interface MbArtistHit {
   name?: string;
   tags?: Array<{ name: string; count: number }>;
+  country?: string;
+  area?: { name?: string };
 }
 
 export async function lookupArtistGenre(
@@ -65,7 +68,8 @@ export async function lookupArtistGenre(
     .map((t) => t.name);
   const groups = groupsForTags(tags);
   if (groups.length === 0) return null;
-  return { groups, tags, source: 'musicbrainz', matchedName: top.name };
+  const origin = { country: top.country ?? null, area: top.area?.name ?? null };
+  return { groups, tags, source: 'musicbrainz', matchedName: top.name, origin };
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -95,7 +99,7 @@ export async function matchArtists(
 
   for (const name of names) {
     if (opts.signal?.aborted) break;
-    const key = `mb-artist:${normalizeArtistName(name)}`;
+    const key = `mb-artist-v2:${normalizeArtistName(name)}`;
     let entry: CachedEntry | undefined;
     try {
       entry = (await cache.get(key)) as CachedEntry | undefined;

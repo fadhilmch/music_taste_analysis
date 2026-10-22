@@ -37,10 +37,22 @@ interface AppState {
   setMonth: (m: string) => void;
   setPlaying: (p: boolean) => void;
   toggleCardBit: (k: keyof CardBits) => void;
+  clearError: () => void;
   reset: () => void;
 }
 
 let matchAbort: AbortController | null = null;
+
+// Raw errors (SyntaxError from JSON.parse, URL/Worker failures) mean nothing to
+// someone picking a file - translate them into what to do next.
+export function friendlyImportError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/streaming-history export|No music plays found/i.test(msg)) return msg;
+  if (/JSON|Unexpected token|parse/i.test(msg)) {
+    return 'That file is not valid JSON. Pick a Streaming_History_Audio JSON file from your Spotify export.';
+  }
+  return 'That file could not be read as a Spotify export. Pick a Streaming_History_Audio JSON file from your Spotify export.';
+}
 
 export const useAppStore = create<AppState>((set, get) => ({
   source: null,
@@ -119,7 +131,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       // No genre matching here on purpose: matching sends artist names to
       // MusicBrainz, so it only starts after explicit opt-in (Genres view).
     } catch (err) {
-      set({ loading: false, error: err instanceof Error ? err.message : String(err) });
+      set({ loading: false, error: friendlyImportError(err) });
     }
   },
 
@@ -155,6 +167,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setPlaying: (playing) => set({ playing }),
   toggleCardBit: (k) => set((s) => ({ cardBits: { ...s.cardBits, [k]: !s.cardBits[k] } })),
 
+  clearError: () => set({ error: null }),
   reset: () => {
     matchAbort?.abort();
     set({

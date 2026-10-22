@@ -66,6 +66,14 @@ export interface Chapter {
 
 export type GenreSource = 'musicbrainz' | 'demo';
 
+/** Where an artist is from, per the metadata source. Not where the user listened. */
+export interface ArtistOrigin {
+  /** ISO 3166-1 alpha-2 country code when the source gives one. */
+  country: string | null;
+  /** Free-text area name (city/region/country) for display fallback. */
+  area: string | null;
+}
+
 export interface ArtistGenre {
   /** Broad groups derived from raw tags; first is primary. */
   groups: string[];
@@ -74,6 +82,8 @@ export interface ArtistGenre {
   source: GenreSource;
   /** Artist name as returned by the source. */
   matchedName: string;
+  /** Origin when the source provides it; absent on older cached entries. */
+  origin?: ArtistOrigin;
 }
 
 export type View = 'journey' | 'story' | 'map' | 'genres' | 'artists' | 'tracks' | 'share' | 'guide';

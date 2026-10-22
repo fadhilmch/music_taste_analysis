@@ -1,141 +1,263 @@
-import { coverage, filterToMonths, fmtMinutes, genreMix, rangeMonthKeys } from '../data/stats';
+import React from 'react';
+import { layerPath, stackRows } from '../lib/streamArea';
+import { filterToMonths, fmtMinutes, rangeMonthKeys, topTracks } from '../data/stats';
 import type { MonthBucket, PlayAggregate } from '../data/types';
 import { useAppStore } from '../state/store';
+import { OptInGate } from './OptIn';
 import { groupHue } from './theme';
 
+const UNC = '__uncategorized__';
+const STREAM_W = 960;
+const STREAM_H = 240;
+interface GroupRow {
+  group: string;
+  minutes: number;
+  artists: Array<{ name: string; minutes: number; topTrack: string | null }>;
+}
+
+/**
+ * Spectrum: the mix of what you listen to, and how it moves over time.
+ * The stream shows each group's share of monthly minutes; the rows below
+ * open to reveal the artists and songs behind a group. Groups are broad
+ * buckets from MusicBrainz community tags - they are not a physical axis
+ * and not measured sound. Unmatched minutes stay visibly uncategorized.
+ */
 export function GenresView({ months, aggs }: { months: MonthBucket[]; aggs: PlayAggregate[] }) {
   const genres = useAppStore((s) => s.genres);
   const genresAreDemo = useAppStore((s) => s.genresAreDemo);
   const matchState = useAppStore((s) => s.matchState);
-  const matchProgress = useAppStore((s) => s.matchProgress);
-  const matchError = useAppStore((s) => s.matchError);
-  const startMatching = useAppStore((s) => s.startMatching);
   const source = useAppStore((s) => s.source);
   const range = useAppStore((s) => s.range);
   const month = useAppStore((s) => s.month);
   const setMonth = useAppStore((s) => s.setMonth);
   const setPlaying = useAppStore((s) => s.setPlaying);
+  const [open, setOpen] = React.useState<string | null>(null);
 
   const rangeKeys = rangeMonthKeys(months, range);
-  const curKey = month ?? months[months.length - 1]?.key;
-  const cur = months.find((m) => m.key === curKey) ?? months[months.length - 1];
-  const curAggs = cur ? aggs.filter((a) => a.month === cur.key) : [];
-  const curMix = genreMix(curAggs, genres);
-  const cov = coverage(filterToMonths(aggs, rangeKeys), genres);
+  const rangedMonths = months.filter((m) => rangeKeys.has(m.key));
+  const rangedAggs = React.useMemo(() => filterToMonths(aggs, rangeKeys), [aggs, rangeKeys]);
+  const gated = source === 'export' && matchState === 'idle';
 
-  const groups = [...new Set(
-    Object.values(genres).flatMap((g) => g.groups),
-  )];
+  /** Primary group per artist (first group wins, same rule as everywhere). */
+  const primaryOf = React.useCallback(
+    (artist: string): string | null => genres[artist]?.groups[0] ?? null,
+    [genres],
+  );
+
+  // Stream series: per month, share of minutes per group.
+  const layers = React.useMemo(() => {
+    const groupSet = new Set<string>();
+    const rows = rangedMonths.map((m) => {
+      const rec: Record<string, number> = { month: m.key } as never;
+      let total = 0;
+      for (const a of aggs) {
+        if (a.month !== m.key) continue;
+        total += a.ms;
+        const g = primaryOf(a.artist);
+        if (g) { groupSet.add(g); rec[g] = (rec[g] ?? 0) + a.ms; }
+        else rec[UNC] = (rec[UNC] ?? 0) + a.ms;
+      }
+      const t = Math.max(1, total);
+      for (const k of Object.keys(rec)) if (k !== 'month') rec[k] = (rec[k] as number) / t;
+      return rec;
+    });
+    const keys = [...groupSet];
+    if (rows.some((r) => (r[UNC] as number) > 0)) keys.push(UNC);
+    return stackRows(rows, keys);
+  }, [rangedMonths, aggs, primaryOf]);
+
+  // Group rows for browsing.
+  const rows = React.useMemo((): GroupRow[] => {
+    const byGroup = new Map<string, Map<string, number>>();
+    const trackAgg = new Map<string, PlayAggregate[]>();
+    for (const a of rangedAggs) {
+      const g = primaryOf(a.artist) ?? UNC;
+      if (!byGroup.has(g)) byGroup.set(g, new Map());
+      const m = byGroup.get(g)!;
+      m.set(a.artist, (m.get(a.artist) ?? 0) + a.ms / 60000);
+      if (!trackAgg.has(a.artist)) trackAgg.set(a.artist, []);
+      trackAgg.get(a.artist)!.push(a);
+    }
+    const out: GroupRow[] = [];
+    for (const [group, artistMap] of byGroup) {
+      const artists = [...artistMap.entries()]
+        .map(([name, minutes]) => ({
+          name,
+          minutes,
+          topTrack: topTracks(trackAgg.get(name) ?? [], 1)[0]?.name ?? null,
+        }))
+        .sort((a, b) => b.minutes - a.minutes);
+      out.push({ group, minutes: artists.reduce((s, a) => s + a.minutes, 0), artists });
+    }
+    out.sort((a, b) => (a.group === UNC ? 1 : b.group === UNC ? -1 : b.minutes - a.minutes));
+    return out;
+  }, [rangedAggs, primaryOf]);
+
+  const totalMin = rows.reduce((s, r) => s + r.minutes, 0);
+  const curKey = month ?? months[months.length - 1]?.key;
+  const xs = rangedMonths.map((_, i) =>
+    rangedMonths.length <= 1 ? STREAM_W / 2 : (i / (rangedMonths.length - 1)) * STREAM_W,
+  );
+
+  const swatch = (g: string) =>
+    g === UNC ? undefined : `hsl(${groupHue(g)} 60% 52%)`;
 
   return (
     <>
-      {source === 'export' && matchState === 'idle' && (
-        <section className="tj-panel tj-optin" aria-labelledby="tj-optin-h">
-          <div className="tj-panel-head">
-            <h3 id="tj-optin-h">Genre lookup is off until you enable it</h3>
-          </div>
-          <p className="tj-note">
-            Genre tags come from MusicBrainz, a public music encyclopedia. Enabling this sends each
-            artist&apos;s name - only the name, never your plays, dates, or the file itself - to
-            musicbrainz.org, one request per artist at about one per second. Matches are cached on
-            this device. Until then, everything below stays uncategorized rather than guessed.
-          </p>
-          <button type="button" className="tj-btn" onClick={() => void startMatching()}>
-            Enable genre lookup
-          </button>
-        </section>
-      )}
-      {matchState === 'matching' && (
-        <p className="tj-note" role="status">
-          Matching genres with MusicBrainz - {matchProgress.done} of {matchProgress.total} artists,
-          paced at about one request per second. Unmatched artists stay uncategorized.
-        </p>
-      )}
-      {matchState === 'error' && (
-        <p className="tj-note tj-note-error" role="alert">
-          Genre matching stopped{matchError ? `: ${matchError}` : ''}.{' '}
-          <button type="button" className="tj-linkbtn" onClick={() => void startMatching()}>Resume</button>
-        </p>
-      )}
+      {source === 'export' && <OptInGate what="Genre lookup" />}
 
-      <section className="tj-panel" aria-labelledby="tj-mix-h">
-        <div className="tj-panel-head">
-          <h3 id="tj-mix-h">Genre mix over time</h3>
-          <p>Share of each month's minutes{genresAreDemo ? ' - demo' : ''}</p>
+      <section className="tj-section" aria-labelledby="tj-stream-h">
+        <div className="tj-section-head">
+          <h3 id="tj-stream-h">How the mix moves</h3>
+          <p>Share of each month&apos;s minutes{genresAreDemo ? ' - demo' : ''}</p>
         </div>
-        <div className="tj-chart" role="img" aria-label="Genre mix per month">
-          {months.map((m) => {
-            const mix = genreMix(aggs.filter((a) => a.month === m.key), genres);
-            return (
-              <button
-                key={m.key}
-                type="button"
-                className={'tj-bar tj-stack' + (m.key === cur?.key ? ' is-on' : '') + (rangeKeys.has(m.key) ? '' : ' is-dim')}
-                onClick={() => { setMonth(m.key); setPlaying(false); }}
-                aria-label={`${m.label} genre mix`}
-              >
-                {mix.slices.map((s) => (
-                  <span
-                    key={s.group}
-                    className="tj-seg"
-                    style={{ height: `${(s.minutes / Math.max(1, mix.total)) * 100}%`, background: `hsl(${groupHue(s.group)} 60% 52%)` }}
-                  />
-                ))}
-                <span
-                  className="tj-seg tj-seg-unc"
-                  style={{ height: `${(mix.uncategorized / Math.max(1, mix.total)) * 100}%` }}
+        {gated ? (
+          <p className="tj-note">Enable the lookup above to see your genre mix.</p>
+        ) : (
+          <>
+            <svg
+              className="tj-stream"
+              viewBox={`0 0 ${STREAM_W} ${STREAM_H}`}
+              role="img"
+              aria-label="Stream of genre share per month"
+            >
+              {layers.map((layer) => {
+                const g = layer.key;
+                const d = layerPath(layer.points, xs, STREAM_H);
+                return g === UNC ? (
+                  <path key={g} d={d} fill="url(#tj-hatch)" opacity={0.85} />
+                ) : (
+                  <path key={g} d={d} fill={swatch(g)} opacity={0.92} />
+                );
+              })}
+              <defs>
+                <pattern id="tj-hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+                  <rect width="7" height="7" fill="#26262b" />
+                  <rect width="3" height="7" fill="#3d3d44" />
+                </pattern>
+              </defs>
+              {rangedMonths.map((m, i) => (
+                <rect
+                  key={m.key}
+                  className={'tj-stream-month' + (m.key === curKey ? ' is-sel' : '')}
+                  x={(i / Math.max(1, rangedMonths.length)) * STREAM_W + 1}
+                  y={1}
+                  width={STREAM_W / Math.max(1, rangedMonths.length) - 2}
+                  height={STREAM_H - 2}
+                  rx={3}
+                  fill="transparent"
+                  tabIndex={m.key === curKey ? 0 : -1}
+                  data-month={m.key}
+                  role="button"
+                  aria-label={`Scrub to ${m.label}. Arrow keys move between months.`}
+                  onClick={() => { setMonth(m.key); setPlaying(false); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMonth(m.key); setPlaying(false); return; }
+                    const dir = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+                    if (dir !== 0) {
+                      e.preventDefault();
+                      const ni = Math.min(rangedMonths.length - 1, Math.max(0, i + dir));
+                      const nm = rangedMonths[ni];
+                      if (nm) {
+                        setMonth(nm.key);
+                        setPlaying(false);
+                        requestAnimationFrame(() => {
+                          e.currentTarget.ownerSVGElement
+                            ?.querySelector<SVGRectElement>(`[data-month="${nm.key}"]`)
+                            ?.focus();
+                        });
+                      }
+                    }
+                  }}
                 />
-              </button>
-            );
-          })}
-        </div>
-        <div className="tj-chart-x">
-          <span>{months[0]?.label}</span>
-          <span>{months[months.length - 1]?.label}</span>
-        </div>
-        <div className="tj-legend">
-          {groups.map((g) => (
-            <span key={g}><i className="tj-dot" style={{ background: `hsl(${groupHue(g)} 60% 52%)` }} />{g}</span>
-          ))}
-          <span><i className="tj-dot tj-dot-unc" />Uncategorized</span>
-        </div>
+              ))}
+            </svg>
+            <div className="tj-chart-x">
+              <span>{rangedMonths[0]?.label}</span>
+              <span>{rangedMonths[rangedMonths.length - 1]?.label}</span>
+            </div>
+            <div className="tj-stream-legend">
+              {layers.map((l) => (
+                <span key={`lg-${l.key}`}>
+                  {l.key === UNC ? (
+                    <i className="tj-spectrum-swatch" style={{ background: 'repeating-linear-gradient(45deg, #3d3d44 0 3px, #26262b 3px 6px)' }} />
+                  ) : (
+                    <i className="tj-spectrum-swatch" style={{ background: swatch(l.key) }} />
+                  )}
+                  {l.key === UNC ? 'Uncategorized' : l.key}
+                </span>
+              ))}
+            </div>
+            <p className="tj-note">
+              Tap a month to scrub the whole app there. The stream shows shares, not loudness or
+              mood - genre tags are metadata, not measured sound.
+            </p>
+          </>
+        )}
       </section>
 
-      {cur && (
-        <section className="tj-panel" aria-labelledby="tj-breakdown-h">
-          <div className="tj-panel-head">
-            <h3 id="tj-breakdown-h">{cur.label} - genre breakdown</h3>
-            <p>
-              {curMix.total > 0 ? Math.round(((curMix.total - curMix.uncategorized) / curMix.total) * 100) : 0}% of minutes matched
-            </p>
+      {!gated && (
+        <section className="tj-section" aria-labelledby="tj-browse-h">
+          <div className="tj-section-head">
+            <h3 id="tj-browse-h">Browse the mix</h3>
+            <p>{fmtMinutes(totalMin)} in the current range</p>
           </div>
-          <ol className="tj-mini">
-            {curMix.slices.map((s, i) => (
-              <li key={s.group}>
-                <span className="tj-rank">{i + 1}</span>
-                <span className="tj-thumb tj-genre-thumb" style={{ background: `hsl(${groupHue(s.group)} 60% 52%)` }} />
-                <span className="tj-mini-name">{s.group}</span>
-                <span className="tj-mini-val">
-                  {Math.round((s.minutes / Math.max(1, curMix.total)) * 100)}% - {fmtMinutes(s.minutes)}
-                </span>
-              </li>
-            ))}
-            {curMix.uncategorized > 0 && (
-              <li>
-                <span className="tj-rank">?</span>
-                <span className="tj-thumb tj-genre-thumb tj-seg-unc" />
-                <span className="tj-mini-name">
-                  Uncategorized
-                  <em>no genre metadata match - left blank, never guessed</em>
-                </span>
-                <span className="tj-mini-val">{Math.round((curMix.uncategorized / Math.max(1, curMix.total)) * 100)}%</span>
-              </li>
-            )}
-          </ol>
+          <div>
+            {rows.map((r) => {
+              const isOpen = open === r.group;
+              const share = Math.round((r.minutes / Math.max(1, totalMin)) * 100);
+              return (
+                <div key={r.group} className="tj-spectrum-row">
+                  <button
+                    type="button"
+                    className="tj-spectrum-btn"
+                    aria-expanded={isOpen}
+                    onClick={() => setOpen(isOpen ? null : r.group)}
+                  >
+                    {r.group === UNC ? (
+                      <span className="tj-spectrum-swatch" style={{ background: 'repeating-linear-gradient(45deg, #3d3d44 0 3px, #26262b 3px 6px)' }} />
+                    ) : (
+                      <span className="tj-spectrum-swatch" style={{ background: swatch(r.group) }} />
+                    )}
+                    <span className="tj-spectrum-name">
+                      {r.group === UNC ? 'Uncategorized' : r.group}
+                    </span>{' '}
+                    <span className="tj-spectrum-share">{share}% - {fmtMinutes(r.minutes)}</span>
+                    <span className="tj-spectrum-caret" aria-hidden="true">&#9656;</span>
+                  </button>
+                  {isOpen && (
+                    <div className="tj-spectrum-detail">
+                      <ol className="tj-mini">
+                        {r.artists.slice(0, 10).map((a, i) => (
+                          <li key={a.name}>
+                            <span className="tj-rank">{i + 1}</span>
+                            <span className="tj-mini-name">
+                              {a.name}
+                              {a.topTrack && <em>most played: {a.topTrack}</em>}
+                            </span>
+                            <span className="tj-mini-val">{fmtMinutes(a.minutes)}</span>
+                          </li>
+                        ))}
+                      </ol>
+                      {r.group === UNC && (
+                        <p className="tj-note">
+                          No genre metadata match - left here on purpose, never guessed.
+                          {genresAreDemo ? ' Demo data keeps one artist here deliberately.' : ''}
+                        </p>
+                      )}
+                      {r.artists.length > 10 && (
+                        <p className="tj-note">Showing the 10 most played of {r.artists.length} artists.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
           <p className="tj-note">
             {genresAreDemo
-              ? 'Demo genres are invented. With a real export, genres are community tags matched per artist from MusicBrainz (CC BY-NC-SA, credited), not measured sound.'
-              : `Genres are community tags matched per artist from MusicBrainz (CC BY-NC-SA), not measured sound. Coverage for the current range: ${cov.matched.toLocaleString()} of ${cov.total.toLocaleString()} minutes.`}
+              ? 'Demo genres are invented. With a real export, groups come from MusicBrainz community tags (CC BY-NC-SA, credited), matched per artist name only.'
+              : 'Groups come from MusicBrainz community tags (CC BY-NC-SA), matched per artist name only. An artist sits under their first matching group.'}
           </p>
         </section>
       )}

@@ -7,12 +7,12 @@ export function LoadingState({ label }: { label: string }) {
   );
 }
 
-export function ErrorState({ title, detail, onRetry }: { title: string; detail?: string; onRetry?: () => void }) {
+export function ErrorState({ title, detail, onRetry, retryLabel }: { title: string; detail?: string; onRetry?: () => void; retryLabel?: string }) {
   return (
     <div className="tj-state tj-state-error" role="alert">
       <p className="tj-state-title">{title}</p>
       {detail && <p className="tj-state-detail">{detail}</p>}
-      {onRetry && <button type="button" className="tj-btn" onClick={onRetry}>Try again</button>}
+      {onRetry && <button type="button" className="tj-btn" onClick={onRetry}>{retryLabel ?? 'Try again'}</button>}
     </div>
   );
 }

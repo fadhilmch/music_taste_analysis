@@ -42,4 +42,4 @@ config.rst
 package-lock.json
 geckodriver.log
 *.iml
-credential.json
+credential.jsonapp/tsconfig.tsbuildinfo

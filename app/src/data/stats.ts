@@ -192,6 +192,8 @@ export function skipStats(events: PlayEvent[]): SkipStats {
 export interface DiscoveryStats {
   /** New artists heard for the first time, per month. */
   byMonth: Array<{ month: string; count: number }>;
+  /** Artists first heard in each month, most-played first (capped). */
+  byMonthArtists: Array<{ month: string; artists: string[] }>;
   totalArtists: number;
   /** Artists heard in exactly one month. */
   oneMonthWonders: number;
@@ -224,7 +226,17 @@ export function discoveries(aggs: PlayAggregate[]): DiscoveryStats {
     .map(([artist, month]) => ({ artist, month }))
     .sort((a, b) => b.month.localeCompare(a.month) || a.artist.localeCompare(b.artist))
     .slice(0, 5);
-  return { byMonth, totalArtists: firstMonth.size, oneMonthWonders, keepers, latest };
+  const totalMs = new Map<string, number>();
+  for (const a of aggs) totalMs.set(a.artist, (totalMs.get(a.artist) ?? 0) + a.ms);
+  const byMonthArtists = [...byMonthMap.keys()].sort().map((month) => ({
+    month,
+    artists: [...firstMonth.entries()]
+      .filter(([, m]) => m === month)
+      .map(([artist]) => artist)
+      .sort((a, b) => (totalMs.get(b) ?? 0) - (totalMs.get(a) ?? 0) || a.localeCompare(b))
+      .slice(0, 8),
+  }));
+  return { byMonth, byMonthArtists, totalArtists: firstMonth.size, oneMonthWonders, keepers, latest };
 }
 
 export interface SessionStats {

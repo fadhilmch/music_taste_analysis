@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
 import { useAppStore } from '../state/store';
@@ -14,10 +14,14 @@ describe('App', () => {
     expect(screen.getAllByText(/invented demo data/i).length).toBeGreaterThan(0);
     expect(screen.getByRole('img', { name: /Monthly listening minutes/i })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Genres' }));
-    expect(screen.getByRole('img', { name: /Genre mix per month/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Spectrum' }));
+    expect(screen.getByRole('img', { name: /Stream of genre share per month/i })).toBeInTheDocument();
     expect(screen.getAllByText(/Uncategorized/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/left blank, never guessed/i)).toBeInTheDocument();
+    // Legend adjacent to the stream names every group.
+    expect(screen.getAllByText(/Folk & acoustic/i).length).toBeGreaterThan(0);
+    // Browse the mix: open a group to reveal its artists.
+    await user.click(screen.getByRole('button', { name: /Uncategorized \d+% - /i }));
+    expect(screen.getByText(/never guessed/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Artists' }));
     expect(screen.getByText('Top artists')).toBeInTheDocument();
@@ -40,12 +44,24 @@ describe('App', () => {
     expect(screen.getByText('Your story in chapters')).toBeInTheDocument();
     expect(screen.getAllByText(/First obsession/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Listening clock/i)).toBeInTheDocument();
+    // Listening clock: a 24-hour dial; selecting an hour shows its share.
+    expect(screen.getByRole('img', { name: /Listening clock: minutes per hour of day/i })).toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: /am: |pm: /i })[0]);
+    expect(screen.getByText(/% of listening/i)).toBeInTheDocument();
+    // Discoveries: tapping a month reveals the artists first heard then.
+    await user.click(screen.getAllByRole('button', { name: /[1-9]\d* new artist/i })[0]);
+    expect(screen.getByText(/first listen/i)).toBeInTheDocument();
     expect(screen.getByText(/Narration - not enabled yet/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Map' }));
-    expect(screen.getByText('Taste map')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /Artist clusters/i })).toBeInTheDocument();
-    expect(screen.getByText(/not measured sound/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'World' }));
+    expect(screen.getByRole('img', { name: /World map with one pin per artist origin country/i })).toBeInTheDocument();
+    expect(screen.getByText(/Where your music comes from/i)).toBeInTheDocument();
+    expect(screen.getByText(/never where you listened/i)).toBeInTheDocument();
+    expect(screen.getByText(/no origin on record/i)).toBeInTheDocument();
+    // List alternative to the map pins, with accessible country rows.
+    const list = screen.getByRole('list', { name: /Origins by country/i });
+    await user.click(within(list).getByRole('button', { name: /^Indonesia/ }));
+    expect(screen.getAllByText(/Senja Radio/i).length).toBeGreaterThan(0);
   });
 
   it('shows the import guide from the empty state and the nav', async () => {
