@@ -5,6 +5,7 @@ import type { MonthBucket, PlayAggregate } from '../data/types';
 import { useAppStore } from '../state/store';
 import { OptInGate } from './OptIn';
 import { groupHue } from './theme';
+import { Section } from './primitives';
 
 const UNC = '__uncategorized__';
 const STREAM_W = 960;
@@ -54,8 +55,10 @@ export function GenresView({ months, aggs }: { months: MonthBucket[]; aggs: Play
         if (a.month !== m.key) continue;
         total += a.ms;
         const g = primaryOf(a.artist);
-        if (g) { groupSet.add(g); rec[g] = (rec[g] ?? 0) + a.ms; }
-        else rec[UNC] = (rec[UNC] ?? 0) + a.ms;
+        if (g) {
+          groupSet.add(g);
+          rec[g] = (rec[g] ?? 0) + a.ms;
+        } else rec[UNC] = (rec[UNC] ?? 0) + a.ms;
       }
       const t = Math.max(1, total);
       for (const k of Object.keys(rec)) if (k !== 'month') rec[k] = (rec[k] as number) / t;
@@ -99,18 +102,17 @@ export function GenresView({ months, aggs }: { months: MonthBucket[]; aggs: Play
     rangedMonths.length <= 1 ? STREAM_W / 2 : (i / (rangedMonths.length - 1)) * STREAM_W,
   );
 
-  const swatch = (g: string) =>
-    g === UNC ? undefined : `hsl(${groupHue(g)} 60% 52%)`;
+  const swatch = (g: string) => (g === UNC ? undefined : `hsl(${groupHue(g)} 60% 52%)`);
 
   return (
     <>
       {source === 'export' && <OptInGate what="Genre lookup" />}
 
-      <section className="tj-section" aria-labelledby="tj-stream-h">
-        <div className="tj-section-head">
-          <h3 id="tj-stream-h">How the mix moves</h3>
-          <p>Share of each month&apos;s minutes{genresAreDemo ? ' - demo' : ''}</p>
-        </div>
+      <Section
+        id="tj-stream-h"
+        title={'How the mix moves'}
+        aside={<>Share of each month&apos;s minutes{genresAreDemo ? ' - demo' : ''}</>}
+      >
         {gated ? (
           <p className="tj-note">Enable the lookup above to see your genre mix.</p>
         ) : (
@@ -131,7 +133,13 @@ export function GenresView({ months, aggs }: { months: MonthBucket[]; aggs: Play
                 );
               })}
               <defs>
-                <pattern id="tj-hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+                <pattern
+                  id="tj-hatch"
+                  width="7"
+                  height="7"
+                  patternTransform="rotate(45)"
+                  patternUnits="userSpaceOnUse"
+                >
                   <rect width="7" height="7" fill="#26262b" />
                   <rect width="3" height="7" fill="#3d3d44" />
                 </pattern>
@@ -150,10 +158,23 @@ export function GenresView({ months, aggs }: { months: MonthBucket[]; aggs: Play
                   data-month={m.key}
                   role="button"
                   aria-label={`Scrub to ${m.label}. Arrow keys move between months.`}
-                  onClick={() => { setMonth(m.key); setPlaying(false); }}
+                  onClick={() => {
+                    setMonth(m.key);
+                    setPlaying(false);
+                  }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMonth(m.key); setPlaying(false); return; }
-                    const dir = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setMonth(m.key);
+                      setPlaying(false);
+                      return;
+                    }
+                    const dir =
+                      e.key === 'ArrowRight' || e.key === 'ArrowDown'
+                        ? 1
+                        : e.key === 'ArrowLeft' || e.key === 'ArrowUp'
+                          ? -1
+                          : 0;
                     if (dir !== 0) {
                       e.preventDefault();
                       const ni = Math.min(rangedMonths.length - 1, Math.max(0, i + dir));
@@ -180,7 +201,12 @@ export function GenresView({ months, aggs }: { months: MonthBucket[]; aggs: Play
               {layers.map((l) => (
                 <span key={`lg-${l.key}`}>
                   {l.key === UNC ? (
-                    <i className="tj-spectrum-swatch" style={{ background: 'repeating-linear-gradient(45deg, #3d3d44 0 3px, #26262b 3px 6px)' }} />
+                    <i
+                      className="tj-spectrum-swatch"
+                      style={{
+                        background: 'repeating-linear-gradient(45deg, #3d3d44 0 3px, #26262b 3px 6px)',
+                      }}
+                    />
                   ) : (
                     <i className="tj-spectrum-swatch" style={{ background: swatch(l.key) }} />
                   )}
@@ -189,19 +215,19 @@ export function GenresView({ months, aggs }: { months: MonthBucket[]; aggs: Play
               ))}
             </div>
             <p className="tj-note">
-              Tap a month to scrub the whole app there. The stream shows shares, not loudness or
-              mood - genre tags are metadata, not measured sound.
+              Tap a month to scrub the whole app there. The stream shows shares, not loudness or mood - genre
+              tags are metadata, not measured sound.
             </p>
           </>
         )}
-      </section>
+      </Section>
 
       {!gated && (
-        <section className="tj-section" aria-labelledby="tj-browse-h">
-          <div className="tj-section-head">
-            <h3 id="tj-browse-h">Browse the mix</h3>
-            <p>{fmtMinutes(totalMin)} in the current range</p>
-          </div>
+        <Section
+          id="tj-browse-h"
+          title={'Browse the mix'}
+          aside={<>{fmtMinutes(totalMin)} in the current range</>}
+        >
           <div>
             {rows.map((r) => {
               const isOpen = open === r.group;
@@ -215,15 +241,22 @@ export function GenresView({ months, aggs }: { months: MonthBucket[]; aggs: Play
                     onClick={() => setOpen(isOpen ? null : r.group)}
                   >
                     {r.group === UNC ? (
-                      <span className="tj-spectrum-swatch" style={{ background: 'repeating-linear-gradient(45deg, #3d3d44 0 3px, #26262b 3px 6px)' }} />
+                      <span
+                        className="tj-spectrum-swatch"
+                        style={{
+                          background: 'repeating-linear-gradient(45deg, #3d3d44 0 3px, #26262b 3px 6px)',
+                        }}
+                      />
                     ) : (
                       <span className="tj-spectrum-swatch" style={{ background: swatch(r.group) }} />
                     )}
-                    <span className="tj-spectrum-name">
-                      {r.group === UNC ? 'Uncategorized' : r.group}
-                    </span>{' '}
-                    <span className="tj-spectrum-share">{share}% - {fmtMinutes(r.minutes)}</span>
-                    <span className="tj-spectrum-caret" aria-hidden="true">&#9656;</span>
+                    <span className="tj-spectrum-name">{r.group === UNC ? 'Uncategorized' : r.group}</span>{' '}
+                    <span className="tj-spectrum-share">
+                      {share}% - {fmtMinutes(r.minutes)}
+                    </span>
+                    <span className="tj-spectrum-caret" aria-hidden="true">
+                      &#9656;
+                    </span>
                   </button>
                   {isOpen && (
                     <div className="tj-spectrum-detail">
@@ -259,7 +292,7 @@ export function GenresView({ months, aggs }: { months: MonthBucket[]; aggs: Play
               ? 'Demo genres are invented. With a real export, groups come from MusicBrainz community tags (CC BY-NC-SA, credited), matched per artist name only.'
               : 'Groups come from MusicBrainz community tags (CC BY-NC-SA), matched per artist name only. An artist sits under their first matching group.'}
           </p>
-        </section>
+        </Section>
       )}
     </>
   );

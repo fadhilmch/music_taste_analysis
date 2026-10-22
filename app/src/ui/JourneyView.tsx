@@ -1,7 +1,15 @@
-import { artistEras, filterToMonths, fmtMinutes, monthLabel, rangeMonthKeys, topArtists } from '../data/stats';
+import {
+  artistEras,
+  filterToMonths,
+  fmtMinutes,
+  monthLabel,
+  rangeMonthKeys,
+  topArtists,
+} from '../data/stats';
 import type { MonthBucket, PlayAggregate } from '../data/types';
 import { useAppStore } from '../state/store';
 import { artistBackground } from './theme';
+import { Section } from './primitives';
 
 export function JourneyView({ months, aggs }: { months: MonthBucket[]; aggs: PlayAggregate[] }) {
   const range = useAppStore((s) => s.range);
@@ -22,19 +30,31 @@ export function JourneyView({ months, aggs }: { months: MonthBucket[]; aggs: Pla
 
   return (
     <>
-      <section className="tj-section" aria-labelledby="tj-journey-h">
-        <div className="tj-section-head">
-          <h3 id="tj-journey-h">Listening over time</h3>
-          <p>{fmtMinutes(total)} - {rangeLabel}</p>
-        </div>
+      <Section
+        id="tj-journey-h"
+        title={'Listening over time'}
+        aside={
+          <>
+            {fmtMinutes(total)} - {rangeLabel}
+          </>
+        }
+      >
         <div className="tj-chart" role="img" aria-label="Monthly listening minutes">
           {months.map((m, i) => (
             <button
               key={m.key}
               type="button"
-              className={'tj-bar' + (m.key === cur?.key ? ' is-on' : '') + (rangeKeys.has(m.key) ? '' : ' is-dim')}
-              style={{ height: `${Math.max(6, (m.minutes / maxMin) * 100)}%`, animationDelay: `${Math.min(i, 30) * 14}ms` }}
-              onClick={() => { setMonth(m.key); setPlaying(false); }}
+              className={
+                'tj-bar' + (m.key === cur?.key ? ' is-on' : '') + (rangeKeys.has(m.key) ? '' : ' is-dim')
+              }
+              style={{
+                height: `${Math.max(6, (m.minutes / maxMin) * 100)}%`,
+                animationDelay: `${Math.min(i, 30) * 14}ms`,
+              }}
+              onClick={() => {
+                setMonth(m.key);
+                setPlaying(false);
+              }}
               aria-label={`${m.label}, ${fmtMinutes(m.minutes)}`}
             />
           ))}
@@ -43,14 +63,10 @@ export function JourneyView({ months, aggs }: { months: MonthBucket[]; aggs: Pla
           <span>{months[0]?.label}</span>
           <span>{months[months.length - 1]?.label}</span>
         </div>
-      </section>
+      </Section>
 
       {cur && (
-        <section className="tj-section" aria-labelledby="tj-month-h">
-          <div className="tj-section-head">
-            <h3 id="tj-month-h">{cur.label}</h3>
-            <p>{fmtMinutes(cur.minutes)}</p>
-          </div>
+        <Section id="tj-month-h" title={cur.label} aside={fmtMinutes(cur.minutes)}>
           {curTop.length > 0 ? (
             <ol className="tj-mini">
               {curTop.map((t, i) => (
@@ -65,31 +81,31 @@ export function JourneyView({ months, aggs }: { months: MonthBucket[]; aggs: Pla
           ) : (
             <p className="tj-note">No listening recorded this month.</p>
           )}
-        </section>
+        </Section>
       )}
 
-      <section className="tj-section" aria-labelledby="tj-eras-h">
-        <div className="tj-section-head">
-          <h3 id="tj-eras-h">Artist eras</h3>
-          <p>Who defined each stretch</p>
-        </div>
+      <Section id="tj-eras-h" title={'Artist eras'} aside={'Who defined each stretch'}>
         <div className="tj-eras">
           {eras.map((e) => (
             <button
               key={e.artist + e.from}
               type="button"
               className="tj-era"
-              onClick={() => { setMonth(e.to); setPlaying(false); }}
+              onClick={() => {
+                setMonth(e.to);
+                setPlaying(false);
+              }}
             >
               <span className="tj-thumb tj-era-art" style={{ background: artistBackground(e.artist) }} />
               <span className="tj-era-name">{e.artist}</span>
               <span className="tj-era-when">
-                {monthLabel(e.from).label}{e.to !== e.from ? ` - ${monthLabel(e.to).label}` : ''}
+                {monthLabel(e.from).label}
+                {e.to !== e.from ? ` - ${monthLabel(e.to).label}` : ''}
               </span>
             </button>
           ))}
         </div>
-      </section>
+      </Section>
     </>
   );
 }

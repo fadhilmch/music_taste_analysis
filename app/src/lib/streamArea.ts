@@ -33,7 +33,11 @@ function monotoneTangents(x: number[], y: number[]): number[] {
   d[n - 1] = m[n - 2];
   for (let i = 1; i < n - 1; i += 1) d[i] = m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2;
   for (let i = 0; i < n - 1; i += 1) {
-    if (m[i] === 0) { d[i] = 0; d[i + 1] = 0; continue; }
+    if (m[i] === 0) {
+      d[i] = 0;
+      d[i + 1] = 0;
+      continue;
+    }
     const a = d[i] / m[i];
     const b = d[i + 1] / m[i];
     const s = a * a + b * b;

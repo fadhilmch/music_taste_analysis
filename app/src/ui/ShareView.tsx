@@ -3,6 +3,7 @@ import { downloadShareCard, renderShareCard, type ShareCardData } from '../lib/s
 import { artistEras, filterToMonths, genreMix, rangeMonthKeys, topArtists, topTracks } from '../data/stats';
 import type { MonthBucket, PlayAggregate } from '../data/types';
 import { useAppStore, type CardBits } from '../state/store';
+import { Button, Card, CardAside, Checkbox } from './primitives';
 
 export function ShareView({ months, aggs }: { months: MonthBucket[]; aggs: PlayAggregate[] }) {
   const range = useAppStore((s) => s.range);
@@ -47,38 +48,39 @@ export function ShareView({ months, aggs }: { months: MonthBucket[]; aggs: PlayA
   }, [range, aggs, genres, cardBits, source]);
 
   return (
-    <section className="tj-panel" aria-labelledby="tj-share-h">
-      <div className="tj-panel-head">
-        <h3 id="tj-share-h">Share card</h3>
-        <p>You pick what goes on it</p>
-      </div>
+    <Card id="tj-share-h" title="Share card" aside={<CardAside>You pick what goes on it</CardAside>}>
       <div className="tj-sharewrap">
         {canvasError ? (
-          <p className="tj-note tj-note-error" role="alert">The card preview needs canvas support: {canvasError}</p>
+          <p className="tj-note tj-note-error" role="alert">
+            The card preview needs canvas support: {canvasError}
+          </p>
         ) : (
           <canvas ref={canvasRef} className="tj-card-canvas" aria-label="Preview of the share card" />
         )}
         <div className="tj-cardopts">
-          {([['artist', 'Top artist'], ['track', 'Top track'], ['minutes', 'Minutes'], ['genre', 'Top genre'], ['eras', 'Era count']] as Array<[keyof CardBits, string]>).map(([k, label]) => (
-            <label key={k} className="tj-check">
-              <input type="checkbox" checked={cardBits[k]} onChange={() => toggleCardBit(k)} />
-              {label}
-            </label>
+          {(
+            [
+              ['artist', 'Top artist'],
+              ['track', 'Top track'],
+              ['minutes', 'Minutes'],
+              ['genre', 'Top genre'],
+              ['eras', 'Era count'],
+            ] as Array<[keyof CardBits, string]>
+          ).map(([k, label]) => (
+            <Checkbox key={k} label={label} checked={cardBits[k]} onChange={() => toggleCardBit(k)} />
           ))}
-          <button
-            type="button"
-            className="tj-btn"
+          <Button
             disabled={!!canvasError}
             onClick={() => canvasRef.current && downloadShareCard(canvasRef.current, 'taste-journey.png')}
           >
             Download PNG
-          </button>
+          </Button>
           <p className="tj-note">
-            The card is drawn on your device and saved as a PNG for iMessage, Instagram stories,
-            wherever. Nothing is posted for you, and your raw history never appears on it.
+            The card is drawn on your device and saved as a PNG for iMessage, Instagram stories, wherever.
+            Nothing is posted for you, and your raw history never appears on it.
           </p>
         </div>
       </div>
-    </section>
+    </Card>
   );
 }

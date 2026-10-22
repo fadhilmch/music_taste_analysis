@@ -1,23 +1,36 @@
 import { describe, expect, it } from 'vitest';
 import {
-  chapters, discoveries, hourHistogram, mixStats, sessions, skipStats, weekdayHistogram,
+  chapters,
+  discoveries,
+  hourHistogram,
+  mixStats,
+  sessions,
+  skipStats,
+  weekdayHistogram,
 } from '../data/stats';
 import { parseStreamingHistory } from '../data/parseExport';
 import { buildDemoAggregates, buildDemoEvents } from '../data/demoData';
 import type { PlayAggregate, PlayEvent } from '../data/types';
 
 const ev = (over: Partial<PlayEvent>): PlayEvent => ({
-  ts: '2025-03-10T20:00:00Z', artist: 'A', track: 't', ms: 180000,
-  skipped: false, reasonEnd: 'trackdone', shuffle: true, offline: false, platform: 'android',
+  ts: '2025-03-10T20:00:00Z',
+  artist: 'A',
+  track: 't',
+  ms: 180000,
+  skipped: false,
+  reasonEnd: 'trackdone',
+  shuffle: true,
+  offline: false,
+  platform: 'android',
   ...over,
 });
 
 describe('hour/weekday histograms', () => {
   it('buckets minutes into local hours and weekdays', () => {
     const events = [
-      ev({ ts: '2025-03-10T20:00:00Z', ms: 60000 }),   // Monday
+      ev({ ts: '2025-03-10T20:00:00Z', ms: 60000 }), // Monday
       ev({ ts: '2025-03-10T21:30:00Z', ms: 120000 }), // Monday
-      ev({ ts: '2025-03-12T08:00:00Z', ms: 30000 }),  // Wednesday
+      ev({ ts: '2025-03-12T08:00:00Z', ms: 30000 }), // Wednesday
     ];
     const hours = hourHistogram(events);
     expect(hours.reduce((s, v) => s + v, 0)).toBe(4); // 1 + 2 + 1 (0.5 rounds up)
@@ -133,13 +146,25 @@ describe('parser event extraction', () => {
   it('keeps skipped/shuffle/offline/platform/reason_end from extended rows', () => {
     const summary = parseStreamingHistory([
       {
-        ts: '2025-01-05T22:10:00Z', ms_played: 90000,
-        master_metadata_track_name: 'Song', master_metadata_album_artist_name: 'Artist',
-        skipped: true, reason_end: 'fwdbtn', shuffle: true, offline: false, platform: 'android',
+        ts: '2025-01-05T22:10:00Z',
+        ms_played: 90000,
+        master_metadata_track_name: 'Song',
+        master_metadata_album_artist_name: 'Artist',
+        skipped: true,
+        reason_end: 'fwdbtn',
+        shuffle: true,
+        offline: false,
+        platform: 'android',
       },
     ]);
     expect(summary.events).toHaveLength(1);
-    expect(summary.events[0]).toMatchObject({ skipped: true, reasonEnd: 'fwdbtn', shuffle: true, offline: false, platform: 'android' });
+    expect(summary.events[0]).toMatchObject({
+      skipped: true,
+      reasonEnd: 'fwdbtn',
+      shuffle: true,
+      offline: false,
+      platform: 'android',
+    });
   });
   it('fills nulls for legacy rows', () => {
     const summary = parseStreamingHistory([

@@ -13,8 +13,28 @@ const summary: ParseSummary = {
     { month: '2024-01', artist: 'Real Artist', track: 'Song 2', ms: 60000 },
   ],
   events: [
-    { ts: '2024-01-01T10:00:00Z', artist: 'Real Artist', track: 'Song', ms: 120000, skipped: false, reasonEnd: 'trackdone', shuffle: true, offline: false, platform: 'android' },
-    { ts: '2024-01-02T10:00:00Z', artist: 'Real Artist', track: 'Song 2', ms: 60000, skipped: null, reasonEnd: null, shuffle: null, offline: null, platform: null },
+    {
+      ts: '2024-01-01T10:00:00Z',
+      artist: 'Real Artist',
+      track: 'Song',
+      ms: 120000,
+      skipped: false,
+      reasonEnd: 'trackdone',
+      shuffle: true,
+      offline: false,
+      platform: 'android',
+    },
+    {
+      ts: '2024-01-02T10:00:00Z',
+      artist: 'Real Artist',
+      track: 'Song 2',
+      ms: 60000,
+      skipped: null,
+      reasonEnd: null,
+      shuffle: null,
+      offline: null,
+      platform: null,
+    },
   ],
 };
 
@@ -35,9 +55,9 @@ describe('privacy: export loading', () => {
   });
 
   it('loads an export without any network call until genre lookup is enabled', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ artists: [] }), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({ artists: [] }), { status: 200 }));
     const file = { name: 'Streaming_History_Audio_0.json', text: async () => '[]' } as File;
     await useAppStore.getState().loadFile(file);
     const s = useAppStore.getState();

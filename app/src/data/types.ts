@@ -42,12 +42,31 @@ export interface MonthBucket {
   minutes: number;
 }
 
-export interface ArtistTotal { name: string; minutes: number; }
-export interface TrackTotal { name: string; artist: string; minutes: number; }
-export interface Era { artist: string; from: string; to: string; minutes: number; }
+export interface ArtistTotal {
+  name: string;
+  minutes: number;
+}
+export interface TrackTotal {
+  name: string;
+  artist: string;
+  minutes: number;
+}
+export interface Era {
+  artist: string;
+  from: string;
+  to: string;
+  minutes: number;
+}
 
-export interface GenreSlice { group: string; minutes: number; }
-export interface GenreMix { slices: GenreSlice[]; uncategorized: number; total: number; }
+export interface GenreSlice {
+  group: string;
+  minutes: number;
+}
+export interface GenreMix {
+  slices: GenreSlice[];
+  uncategorized: number;
+  total: number;
+}
 
 export type ChapterKind = 'first' | 'takeover' | 'comeback' | 'phase';
 
@@ -88,4 +107,7 @@ export interface ArtistGenre {
 
 export type View = 'journey' | 'story' | 'map' | 'genres' | 'artists' | 'tracks' | 'share' | 'guide';
 
-export interface Coverage { matched: number; total: number; }
+export interface Coverage {
+  matched: number;
+  total: number;
+}

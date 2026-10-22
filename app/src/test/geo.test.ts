@@ -38,23 +38,37 @@ describe('artist origins', () => {
   });
 
   it('MusicBrainz lookup captures country and area when present', async () => {
-    const fetcher = vi.fn(async () => new Response(JSON.stringify({
-      artists: [{
-        name: 'June Harbor',
-        country: 'SE',
-        area: { name: 'Stockholm, Sweden' },
-        tags: [{ name: 'ambient', count: 5 }],
-      }],
-    }), { status: 200 })) as unknown as typeof fetch;
+    const fetcher = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            artists: [
+              {
+                name: 'June Harbor',
+                country: 'SE',
+                area: { name: 'Stockholm, Sweden' },
+                tags: [{ name: 'ambient', count: 5 }],
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+    ) as unknown as typeof fetch;
     const hit = await lookupArtistGenre('June Harbor', fetcher);
     expect(hit?.origin?.country).toBe('SE');
     expect(hit?.origin?.area).toBe('Stockholm, Sweden');
   });
 
   it('lookup tolerates artists with no origin fields', async () => {
-    const fetcher = vi.fn(async () => new Response(JSON.stringify({
-      artists: [{ name: 'Mystery Act', tags: [{ name: 'rock', count: 3 }] }],
-    }), { status: 200 })) as unknown as typeof fetch;
+    const fetcher = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            artists: [{ name: 'Mystery Act', tags: [{ name: 'rock', count: 3 }] }],
+          }),
+          { status: 200 },
+        ),
+    ) as unknown as typeof fetch;
     const hit = await lookupArtistGenre('Mystery Act', fetcher);
     expect(hit?.groups).toContain('Rock');
     expect(hit?.origin?.country).toBeNull();
@@ -64,9 +78,21 @@ describe('artist origins', () => {
 describe('streamArea', () => {
   it('stacks rows into cumulative layers and produces closed paths', async () => {
     const { stackRows, layerPath } = await import('../lib/streamArea');
-    const layers = stackRows([{ a: 0.5, b: 0.25 }, { a: 0.2, b: 0.6 }], ['a', 'b']);
-    expect(layers[0].points).toEqual([[0, 0.5], [0, 0.2]]);
-    expect(layers[1].points).toEqual([[0.5, 0.75], [0.2, 0.8]]);
+    const layers = stackRows(
+      [
+        { a: 0.5, b: 0.25 },
+        { a: 0.2, b: 0.6 },
+      ],
+      ['a', 'b'],
+    );
+    expect(layers[0].points).toEqual([
+      [0, 0.5],
+      [0, 0.2],
+    ]);
+    expect(layers[1].points).toEqual([
+      [0.5, 0.75],
+      [0.2, 0.8],
+    ]);
     const d = layerPath(layers[0].points, [0, 100], 200);
     expect(d.startsWith('M')).toBe(true);
     expect(d.endsWith('Z')).toBe(true);
@@ -75,7 +101,14 @@ describe('streamArea', () => {
 
   it('monotone curve passes through the data points', async () => {
     const { layerPath } = await import('../lib/streamArea');
-    const d = layerPath([[0, 0.5], [0, 0.5]], [0, 100], 100);
+    const d = layerPath(
+      [
+        [0, 0.5],
+        [0, 0.5],
+      ],
+      [0, 100],
+      100,
+    );
     expect(d).toContain('0.00,50.00');
     expect(d).toContain('100.00,50.00');
   });

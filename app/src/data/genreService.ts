@@ -33,14 +33,12 @@ const idbCache: CacheStore = {
   set: (k, v) => idbSet(k, v),
 };
 
-interface CachedEntry { genre: ArtistGenre | null }
+interface CachedEntry {
+  genre: ArtistGenre | null;
+}
 
 export function normalizeArtistName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[‘’]/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim();
+  return name.toLowerCase().replace(/[‘’]/g, "'").replace(/\s+/g, ' ').trim();
 }
 
 interface MbArtistHit {
@@ -103,7 +101,9 @@ export async function matchArtists(
     let entry: CachedEntry | undefined;
     try {
       entry = (await cache.get(key)) as CachedEntry | undefined;
-    } catch { /* cache read failure is not fatal */ }
+    } catch {
+      /* cache read failure is not fatal */
+    }
     if (!entry) {
       let genre: ArtistGenre | null = null;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
@@ -126,7 +126,9 @@ export async function matchArtists(
       entry = { genre };
       try {
         await cache.set(key, entry);
-      } catch { /* cache write failure is not fatal */ }
+      } catch {
+        /* cache write failure is not fatal */
+      }
     }
     if (entry.genre) out[name] = entry.genre;
     done += 1;

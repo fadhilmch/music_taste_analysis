@@ -5,6 +5,7 @@ import type { MonthBucket, PlayAggregate } from '../data/types';
 import { useAppStore } from '../state/store';
 import { OptInGate } from './OptIn';
 import { groupHue } from './theme';
+import { Card, CardAside, Section } from './primitives';
 
 const MS_PER_MIN = 60000;
 
@@ -101,7 +102,9 @@ export function MapView({ months, aggs }: { months: MonthBucket[]; aggs: PlayAgg
     }
     return {
       pins,
-      noOrigin: [...noOrigin.entries()].map(([artist, minutes]) => ({ artist, minutes })).sort((a, b) => b.minutes - a.minutes),
+      noOrigin: [...noOrigin.entries()]
+        .map(([artist, minutes]) => ({ artist, minutes }))
+        .sort((a, b) => b.minutes - a.minutes),
       route,
     };
   }, [rangedAggs, rangedMonths, genres]);
@@ -110,20 +113,25 @@ export function MapView({ months, aggs }: { months: MonthBucket[]; aggs: PlayAgg
   const sel = pins.find((p) => p.shape.id === selected) ?? null;
   const gated = source === 'export' && matchState === 'idle';
 
-  const routePath = route.length >= 2
-    ? route.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.shape.centroid[0]},${p.shape.centroid[1]}`).join(' ')
-    : null;
+  const routePath =
+    route.length >= 2
+      ? route.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.shape.centroid[0]},${p.shape.centroid[1]}`).join(' ')
+      : null;
 
   return (
     <>
       {source === 'export' && <OptInGate what="World map and genres" />}
 
-      <section className="tj-section" aria-labelledby="tj-world-h">
-        <div className="tj-section-head">
-          <h3 id="tj-world-h">Where your music comes from</h3>
-          <p>{genresAreDemo ? 'Demo tags' : 'MusicBrainz'}{range !== 'all' ? ' - current range' : ''}</p>
-        </div>
-
+      <Section
+        id="tj-world-h"
+        title={'Where your music comes from'}
+        aside={
+          <>
+            {genresAreDemo ? 'Demo tags' : 'MusicBrainz'}
+            {range !== 'all' ? ' - current range' : ''}
+          </>
+        }
+      >
         {gated ? (
           <p className="tj-note">Enable the lookup above to place your artists on the map.</p>
         ) : (
@@ -147,7 +155,11 @@ export function MapView({ months, aggs }: { months: MonthBucket[]; aggs: PlayAgg
                 const [cx, cy] = p.shape.centroid;
                 return (
                   <g key={p.shape.id}>
-                    <circle className="tj-world-hit" cx={cx} cy={cy} r={hit}
+                    <circle
+                      className="tj-world-hit"
+                      cx={cx}
+                      cy={cy}
+                      r={hit}
                       tabIndex={0}
                       role="button"
                       aria-label={`${p.country}: ${p.artists.length} artist${p.artists.length === 1 ? '' : 's'}, ${fmtMinutes(p.minutes)}`}
@@ -161,49 +173,83 @@ export function MapView({ months, aggs }: { months: MonthBucket[]; aggs: PlayAgg
                     />
                     <circle
                       className={'tj-world-pin' + (selected === p.shape.id ? ' is-sel' : '')}
-                      cx={cx} cy={cy} r={r}
+                      cx={cx}
+                      cy={cy}
+                      r={r}
                       fill={p.hue != null ? `hsl(${p.hue} 60% 52%)` : '#5a5a60'}
                       pointerEvents="none"
                     />
-                    <text className="tj-world-label" x={cx} y={cy + r + labelUnits} style={{ fontSize: labelUnits }}>{p.country}</text>
+                    <text
+                      className="tj-world-label"
+                      x={cx}
+                      y={cy + r + labelUnits}
+                      style={{ fontSize: labelUnits }}
+                    >
+                      {p.country}
+                    </text>
                   </g>
                 );
               })}
-              {[...route.reduce((m, p, i) => (m.has(p.shape.id) ? m : m.set(p.shape.id, i)), new Map<string, number>()).entries()].map(([id, i]) => {
+              {[
+                ...route
+                  .reduce(
+                    (m, p, i) => (m.has(p.shape.id) ? m : m.set(p.shape.id, i)),
+                    new Map<string, number>(),
+                  )
+                  .entries(),
+              ].map(([id, i]) => {
                 const p = route[i];
                 return (
-                  <g key={`stop-${id}`} transform={`translate(${p.shape.centroid[0]}, ${p.shape.centroid[1] - 22})`}>
+                  <g
+                    key={`stop-${id}`}
+                    transform={`translate(${p.shape.centroid[0]}, ${p.shape.centroid[1] - 22})`}
+                  >
                     <circle className="tj-world-stop" r={8} />
-                    <text className="tj-world-stopnum" y={0.5}>{i + 1}</text>
+                    <text className="tj-world-stopnum" y={0.5}>
+                      {i + 1}
+                    </text>
                   </g>
                 );
               })}
             </svg>
 
             <div className="tj-map-legend">
-              <span className="tj-map-chip"><i className="tj-map-dot" style={{ background: 'var(--green)' }} />Numbered stops: your chapters, in order</span>
-              <span className="tj-map-chip"><i className="tj-map-dot" style={{ background: '#5a5a60' }} />No genre group</span>
+              <span className="tj-map-chip">
+                <i className="tj-map-dot" style={{ background: 'var(--green)' }} />
+                Numbered stops: your chapters, in order
+              </span>
+              <span className="tj-map-chip">
+                <i className="tj-map-dot" style={{ background: '#5a5a60' }} />
+                No genre group
+              </span>
             </div>
 
             {sel && (
-              <div className="tj-panel" role="status">
-                <div className="tj-panel-head">
-                  <h3>{sel.country}</h3>
-                  <p>{fmtMinutes(sel.minutes)} in the current range</p>
-                </div>
+              <Card
+                role="status"
+                animated={false}
+                title={sel.country}
+                aside={<CardAside>{fmtMinutes(sel.minutes)} in the current range</CardAside>}
+              >
                 <ol className="tj-mini">
                   {sel.artists.map((a, i) => (
                     <li key={a.name}>
                       <span className="tj-rank">{i + 1}</span>
                       <span className="tj-mini-name">
                         {a.name}
-                        <em>most played: {topTracks(rangedAggs.filter((x) => x.artist === a.name), 1)[0]?.name ?? 'n/a'}</em>
+                        <em>
+                          most played:{' '}
+                          {topTracks(
+                            rangedAggs.filter((x) => x.artist === a.name),
+                            1,
+                          )[0]?.name ?? 'n/a'}
+                        </em>
                       </span>
                       <span className="tj-mini-val">{fmtMinutes(a.minutes)}</span>
                     </li>
                   ))}
                 </ol>
-              </div>
+              </Card>
             )}
 
             <div className="tj-country-list" role="list" aria-label="Origins by country">
@@ -214,7 +260,10 @@ export function MapView({ months, aggs }: { months: MonthBucket[]; aggs: PlayAgg
                   className={'tj-country-row' + (selected === p.shape.id ? ' is-sel' : '')}
                   onClick={() => setSelected(selected === p.shape.id ? null : p.shape.id)}
                 >
-                  <i className="tj-map-dot" style={{ background: p.hue != null ? `hsl(${p.hue} 60% 52%)` : '#5a5a60' }} />
+                  <i
+                    className="tj-map-dot"
+                    style={{ background: p.hue != null ? `hsl(${p.hue} 60% 52%)` : '#5a5a60' }}
+                  />
                   <span className="tj-country-name">{p.country}</span>
                   <span className="tj-country-meta">
                     {p.artists.length} artist{p.artists.length === 1 ? '' : 's'} - {fmtMinutes(p.minutes)}
@@ -224,9 +273,9 @@ export function MapView({ months, aggs }: { months: MonthBucket[]; aggs: PlayAgg
             </div>
 
             <p className="tj-note">
-              Each pin sits at the center of a country and means artists you play come from
-              there - never where you listened. Pin size is your minutes in the current range;
-              color is the dominant genre group. Origins and tags
+              Each pin sits at the center of a country and means artists you play come from there - never
+              where you listened. Pin size is your minutes in the current range; color is the dominant genre
+              group. Origins and tags
               {genresAreDemo
                 ? ' are invented demo data.'
                 : ' come from MusicBrainz (CC BY-NC-SA, credited); nothing about your plays leaves this device.'}
@@ -250,7 +299,7 @@ export function MapView({ months, aggs }: { months: MonthBucket[]; aggs: PlayAgg
             )}
           </>
         )}
-      </section>
+      </Section>
     </>
   );
 }

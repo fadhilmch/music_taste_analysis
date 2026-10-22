@@ -8,6 +8,7 @@ import { GuideView } from './ui/GuideView';
 import { JourneyView } from './ui/JourneyView';
 import { MapView } from './ui/MapView';
 import { PlayerBar } from './ui/PlayerBar';
+import { Chip, Tab } from './ui/primitives';
 import { ShareView } from './ui/ShareView';
 import { SourceBar } from './ui/SourceBar';
 import { StoryView } from './ui/StoryView';
@@ -95,15 +96,9 @@ export default function App() {
           <p className="tj-brand">Taste Journey</p>
           <nav className="tj-nav" aria-label="Views">
             {TABS.map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                className={'tj-tab' + (view === id ? ' is-on' : '')}
-                onClick={() => setView(id)}
-                aria-pressed={view === id}
-              >
+              <Tab key={id} on={view === id} onClick={() => setView(id)}>
                 {label}
-              </button>
+              </Tab>
             ))}
           </nav>
           {source === 'demo' && <p className="tj-demo-pill">Demo data</p>}
@@ -116,37 +111,44 @@ export default function App() {
           {error && (
             <ErrorState
               title="That file did not work"
-              detail={error + (source !== null ? ' Nothing was replaced - the data you were viewing is still loaded.' : '')}
+              detail={
+                error +
+                (source !== null ? ' Nothing was replaced - the data you were viewing is still loaded.' : '')
+              }
               onRetry={clearError}
-              retryLabel={source === 'export' ? 'Back to your export' : source === 'demo' ? 'Back to demo data' : 'Back to start'}
+              retryLabel={
+                source === 'export'
+                  ? 'Back to your export'
+                  : source === 'demo'
+                    ? 'Back to demo data'
+                    : 'Back to start'
+              }
             />
           )}
 
           {!loading && !error && view === 'guide' && <GuideView />}
 
-          {!loading && !error && view !== 'guide' && source === null && (
-            <Onboarding />
-          )}
+          {!loading && !error && view !== 'guide' && source === null && <Onboarding />}
 
           {!loading && !error && view !== 'guide' && source !== null && aggregates.length > 0 && (
             <>
               {parseInfo && (
                 <p className="tj-note">
                   {parseInfo.eventCount.toLocaleString()} plays read
-                  {parseInfo.format ? ` (${parseInfo.format === 'extended' ? 'extended' : 'legacy'} export)` : ''}
-                  {parseInfo.skipped > 0 ? `, ${parseInfo.skipped.toLocaleString()} non-music or invalid rows skipped` : ''}.
+                  {parseInfo.format
+                    ? ` (${parseInfo.format === 'extended' ? 'extended' : 'legacy'} export)`
+                    : ''}
+                  {parseInfo.skipped > 0
+                    ? `, ${parseInfo.skipped.toLocaleString()} non-music or invalid rows skipped`
+                    : ''}
+                  .
                 </p>
               )}
               <div className="tj-ranges" role="group" aria-label="Time range">
                 {RANGES.map((r) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    className={'tj-chip' + (range === r.id ? ' is-on' : '')}
-                    onClick={() => setRange(r.id)}
-                  >
+                  <Chip key={r.id} on={range === r.id} onClick={() => setRange(r.id)}>
                     {r.label}
-                  </button>
+                  </Chip>
                 ))}
               </div>
               {VIEW_HEADS[view] && (

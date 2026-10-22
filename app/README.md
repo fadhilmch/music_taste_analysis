@@ -49,6 +49,8 @@ Two data sources, always clearly labeled:
 - **Web Worker** (`src/workers/parseWorker.ts`) - parsing multi-year exports can be tens of
   MB of JSON; it runs off the main thread so the UI stays responsive, with visible
   loading/error/empty states.
+- **Tailwind CSS v4** (`@tailwindcss/vite`) - utility styling for the shared UI
+  primitives; design tokens live in one `@theme` block (see Styling conventions below).
 - **@fontsource/nunito** - self-hosted Nunito (rounded, matches the design language); no
   Google Fonts request, so fonts work offline and leak nothing.
 - **Vitest + Testing Library** - unit tests for parsing, stats, genre grouping and the genre
@@ -60,9 +62,10 @@ Two data sources, always clearly labeled:
 
 Nothing is sent anywhere until you explicitly enable the lookup (a button in the Spectrum and World
 views, shown for exports only). When enabled, the only data that leaves the device is each
-artist's *name* as a search query (`GET /ws/2/artist/?query=artist:"<name>"&fmt=json&limit=1`)
+artist's _name_ as a search query (`GET /ws/2/artist/?query=artist:"<name>"&fmt=json&limit=1`)
+
 - never plays, timestamps, track titles, or the file itself. Demo mode is fully offline and
-never calls MusicBrainz.
+  never calls MusicBrainz.
 
 Artist genre tags come from the [MusicBrainz](https://musicbrainz.org) API (`ws/2/artist`),
 queried directly from the browser (CORS is open). Constraints we honor:
@@ -71,8 +74,8 @@ queried directly from the browser (CORS is open). Constraints we honor:
   artist, and caches results.
 - **License** - the two datasets we touch are licensed differently
   ([MusicBrainz Database](https://musicbrainz.org/doc/MusicBrainz_Database)). Artist
-  *origin* (area / country) is **core data under CC0** (public domain). Artist *genre
-  tags* are **supplementary data under CC BY-NC-SA 3.0** - non-commercial, share-alike:
+  _origin_ (area / country) is **core data under CC0** (public domain). Artist _genre
+  tags_ are **supplementary data under CC BY-NC-SA 3.0** - non-commercial, share-alike:
   fine for a personal/portfolio tool with attribution, but it constrains commercial
   reuse and relicensing of derived data. MusicBrainz is credited in the UI next to
   genre figures.
@@ -92,6 +95,38 @@ queried directly from the browser (CORS is open). Constraints we honor:
 - **Audio analysis / ML on Spotify content** - prohibited by Spotify policy.
 - **Server upload of the export** - privacy is the feature: everything stays on-device.
 
+## Styling conventions
+
+Reusable controls are **shared primitives** in `src/ui/primitives.tsx`, styled with
+Tailwind utility classes. Views compose these instead of assembling class strings:
+
+- `Button` (`primary` default, `ghost` variant), `Chip` (filter toggle, `aria-pressed`),
+  `Tab` (side-nav tab, `aria-pressed`), `Kicker` (overline label), `Card` + `CardAside`
+  (titled panel; `aside` renders raw so it can hold text via `CardAside` or a control),
+  `Section` (titled group with hairline separator), `RankList` / `RankRow` (ranked
+  artist/track rows), `Checkbox`, `FileInput` (visually hidden file picker + trigger).
+- Behavior is covered by `src/test/primitives.test.tsx`; extend those tests when a
+  primitive changes.
+
+CSS is organized under `src/styles/`:
+
+- `tokens.css` - the `@theme` design tokens (single source of truth for color) plus a
+  scoped custom-property mirror on `.tj` for the remaining bespoke rules.
+- `base.css` - document base (dark scheme, root sizing).
+- `components.css` - bespoke, non-reusable CSS (app shell, charts, visualizations,
+  animations). New shared patterns belong in `primitives.tsx` as utilities, not here.
+
+Conventions when editing styles:
+
+- Use theme-token utilities (`bg-panel`, `text-txt-2`, `accent-green`, ...) rather than
+  raw hex. Add a token to `@theme` first when a value is genuinely new.
+- Caller overrides on primitives go through the `className` prop; add a trailing `!`
+  (Tailwind v4 important) when an override must beat a base utility in the same group.
+- `Card` plays the `tj-rise` entrance animation by default (matching the old
+  direct-child panel rule); pass `animated={false}` for nested panels that never had it.
+- Breakpoints mirror the legacy CSS: tab collapse at 640px (`max-sm:`), rank-number
+  hiding at 400px (`max-[400px]:`).
+
 ## Development
 
 ```sh
@@ -100,6 +135,9 @@ npm run dev        # local dev server
 npm test           # vitest run
 npm run build      # type-check + production build to dist/
 npm run preview    # serve the production build
+npm run lint       # eslint (flat config, zero warnings allowed in CI)
+npm run format     # prettier write
+npm run format:check  # prettier check (CI)
 ```
 
 `vite.preview.config.ts` is an extra config that bundles the app into a single

@@ -84,7 +84,6 @@ export function renderShareCard(canvas: HTMLCanvasElement, data: ShareCardData, 
   }
   if (bits.eras) {
     ctx.fillText(`${data.eraCount} artist eras`, pad, y);
-    y += 72;
   }
 
   ctx.fillStyle = '#ffffff80';

@@ -65,7 +65,10 @@ export function parseStreamingHistory(json: unknown): ParseSummary {
 
   for (const row of json) {
     const rowFormat = detectFormat(row);
-    if (rowFormat === null) { skipped += 1; continue; }
+    if (rowFormat === null) {
+      skipped += 1;
+      continue;
+    }
     format = format ?? rowFormat;
     let ts: string;
     let ms: number;
@@ -101,7 +104,10 @@ export function parseStreamingHistory(json: unknown): ParseSummary {
       continue;
     }
     const month = monthKey(ts);
-    if (month === null || !(ms > 0)) { skipped += 1; continue; }
+    if (month === null || !(ms > 0)) {
+      skipped += 1;
+      continue;
+    }
     eventCount += 1;
     if (firstTs === null || ts < firstTs) firstTs = ts;
     if (lastTs === null || ts > lastTs) lastTs = ts;
@@ -109,11 +115,25 @@ export function parseStreamingHistory(json: unknown): ParseSummary {
     const cur = acc.get(key);
     if (cur) cur.ms += ms;
     else acc.set(key, { month, artist, track, ms });
-    events.push(ev ?? { ts, artist, track, ms, skipped: null, reasonEnd: null, shuffle: null, offline: null, platform: null });
+    events.push(
+      ev ?? {
+        ts,
+        artist,
+        track,
+        ms,
+        skipped: null,
+        reasonEnd: null,
+        shuffle: null,
+        offline: null,
+        platform: null,
+      },
+    );
   }
 
   if (eventCount === 0) {
-    throw new Error('No music plays found in this file. Pick a Streaming_History_Audio JSON file from your Spotify export.');
+    throw new Error(
+      'No music plays found in this file. Pick a Streaming_History_Audio JSON file from your Spotify export.',
+    );
   }
   return { aggregates: [...acc.values()], events, eventCount, skipped, format, firstTs, lastTs };
 }
