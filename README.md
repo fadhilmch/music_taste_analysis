@@ -47,3 +47,7 @@ artist, album and track lookups) are unaffected.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md): setup, the checks CI runs (lint, format, tests,
 build), and the ground rules - privacy first, honest UI, notebooks stay as written.
+
+## License
+
+[MIT](LICENSE).

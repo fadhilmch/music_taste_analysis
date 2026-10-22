@@ -47,3 +47,6 @@ conventions in [app/README.md](app/README.md#styling-conventions).
   reformat them. If you get them running again, pinning versions in
   `requirements-notebooks.txt` is the place to help.
 - Small, focused PRs with a clear description of the change and why.
+
+By contributing, you agree that your contributions are licensed under the
+repo's [MIT license](LICENSE).
