@@ -1,6 +1,24 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Minimal preflight - replaces Tailwind base. The app uses only .tj-* classes,
+   so the full framework was dead weight (and its only vulnerable dependency chain). */
+@layer base {
+*, *::before, *::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: currentColor; }
+* { margin: 0; }
+html { line-height: 1.5; -webkit-text-size-adjust: 100%; }
+ul, ol, menu { list-style: none; padding: 0; }
+button, input, select, textarea { font: inherit; color: inherit; padding: 0; background: transparent; }
+button, [role="button"] { cursor: pointer; }
+:disabled { cursor: default; }
+img, svg, video, canvas, audio, iframe, embed, object { display: block; vertical-align: middle; }
+img, video { max-width: 100%; height: auto; }
+b, strong { font-weight: bolder; }
+code, kbd, samp, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1em; }
+table { border-collapse: collapse; border-color: inherit; }
+::placeholder { opacity: 1; color: #9ca3af; }
+h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
+button { text-transform: none; }
+textarea { resize: vertical; }
+
+}
 
 @layer base {
   :root { color-scheme: dark; }
@@ -162,6 +180,7 @@
   .tj-state-title { color: var(--txt); font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
   .tj-state-error .tj-state-title { color: #ffb4a2; }
   .tj-state-detail { font-size: 13.5px; max-width: 460px; line-height: 1.55; }
+  .tj-state .tj-btn { align-self: center; }
 
   .tj-onboard { display: flex; flex-direction: column; align-items: flex-start; padding: 30px 4px 24px; max-width: 560px; }
   .tj-kicker { font-size: 10.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--green); margin-bottom: 14px; }

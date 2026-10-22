@@ -221,7 +221,7 @@ export function GenresView({ months, aggs }: { months: MonthBucket[]; aggs: Play
                     )}
                     <span className="tj-spectrum-name">
                       {r.group === UNC ? 'Uncategorized' : r.group}
-                    </span>
+                    </span>{' '}
                     <span className="tj-spectrum-share">{share}% - {fmtMinutes(r.minutes)}</span>
                     <span className="tj-spectrum-caret" aria-hidden="true">&#9656;</span>
                   </button>

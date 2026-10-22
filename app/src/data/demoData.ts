@@ -123,6 +123,10 @@ export function buildDemoEvents(): PlayEvent[] {
       const m = Number(key.slice(5, 7));
       for (let p = 0; p < plays; p++) {
         const day = 1 + Math.floor(rnd() * 28);
+        // Weekday rhythm: Fridays and Saturdays listen heaviest, midweek lighter.
+        const wd = new Date(Date.UTC(y, m - 1, day)).getUTCDay();
+        const wdWeight = wd === 5 || wd === 6 ? 1 : wd === 0 ? 0.9 : 0.62;
+        if (rnd() > wdWeight) continue;
         // Evening-heavy: 60% between 17-23, else spread across the day.
         const hour = rnd() < 0.6 ? 17 + Math.floor(rnd() * 7) : 7 + Math.floor(rnd() * 10);
         const minute = Math.floor(rnd() * 60);
