@@ -37,7 +37,7 @@ import { useAppStore } from '../state/store';
 
 export function Onboarding() {
   const loadDemo = useAppStore((s) => s.loadDemo);
-  const loadFile = useAppStore((s) => s.loadFile);
+  const loadFiles = useAppStore((s) => s.loadFiles);
   const setView = useAppStore((s) => s.setView);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -46,8 +46,8 @@ export function Onboarding() {
       <Kicker>Private - runs in your browser</Kicker>
       <p className="tj-onboard-title">Your listening, turned into a journey.</p>
       <p className="tj-onboard-body">
-        Take the demo for a spin, or drop in your own Spotify streaming history JSON. Your file is read in
-        this tab only - nothing is uploaded.
+        Take the demo for a spin, or drop in your own Spotify streaming history JSON files - select them
+        all together, they combine into one timeline. Everything is read in this tab only - nothing is uploaded.
       </p>
       <div className="tj-onboard-actions">
         <Button onClick={loadDemo}>Try the demo journey</Button>
@@ -56,8 +56,8 @@ export function Onboarding() {
         </Button>
         <FileInput
           inputRef={inputRef}
-          label="Choose a Spotify streaming history JSON file"
-          onFile={(f) => void loadFile(f)}
+          label="Choose your Spotify streaming history JSON files"
+          onFiles={(fs) => void loadFiles(fs)}
         />
       </div>
       <button type="button" className="tj-guidelink" onClick={() => setView('guide')}>

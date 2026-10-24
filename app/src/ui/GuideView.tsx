@@ -11,7 +11,7 @@ const STEPS: Array<[string, string]> = [
   ["Wait for Spotify's email", 'Spotify emails you a download link to a ZIP when your export is ready.'],
   [
     'Import here',
-    'Unzip, then drop the Streaming_History_Audio JSON files in. They are read in this tab and never uploaded.',
+    'Unzip, then pick all the Streaming_History_Audio JSON files together in the picker (Ctrl/Cmd-click). They combine into one timeline, read in this tab and never uploaded.',
   ],
 ];
 

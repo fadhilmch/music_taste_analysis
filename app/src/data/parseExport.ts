@@ -55,7 +55,65 @@ export function parseStreamingHistory(json: unknown): ParseSummary {
   if (!Array.isArray(json)) {
     throw new Error('This file is not a Spotify streaming-history export (expected a JSON array).');
   }
+  return parseRows(json);
+}
+
+/**
+ * Key identifying one play for exact-duplicate removal. Spotify export files
+ * overlap at their boundaries, so combining several files without this doubles
+ * those plays. Same track + artist + ms at the same second is one play.
+ */
+function rowKey(row: unknown): string | null {
+  const format = detectFormat(row);
+  if (format === 'extended') {
+    const r = row as ExtendedRow;
+    return `e|${String(r.ts)}|${String(r.master_metadata_album_artist_name)}|${String(r.master_metadata_track_name)}|${String(r.ms_played)}`;
+  }
+  if (format === 'legacy') {
+    const r = row as LegacyRow;
+    return `l|${String(r.endTime)}|${String(r.artistName)}|${String(r.trackName)}|${String(r.msPlayed)}`;
+  }
+  return null;
+}
+
+/**
+ * Parse several export files into one combined summary. Rows are concatenated
+ * (filenames carry no meaning - files can span any period), exact duplicate
+ * rows are removed once, and the result goes through the same fold as a
+ * single file. Returns duplicate/file counts in the optional summary fields.
+ */
+export function parseStreamingHistoryMulti(jsonArrays: unknown[]): ParseSummary {
+  if (jsonArrays.length === 0) {
+    throw new Error('Pick at least one Streaming_History_Audio JSON file from your Spotify export.');
+  }
+  const seen = new Set<string>();
+  let duplicates = 0;
+  const rows: unknown[] = [];
+  for (const json of jsonArrays) {
+    if (!Array.isArray(json)) {
+      throw new Error('This file is not a Spotify streaming-history export (expected a JSON array).');
+    }
+    for (const row of json) {
+      const key = rowKey(row);
+      if (key !== null) {
+        if (seen.has(key)) {
+          duplicates += 1;
+          continue;
+        }
+        seen.add(key);
+      }
+      rows.push(row);
+    }
+  }
+  const summary = parseRows(rows);
+  summary.duplicates = duplicates;
+  summary.files = jsonArrays.length;
+  return summary;
+}
+
+function parseRows(json: unknown[]): ParseSummary {
   let format: ExportFormat | null = null;
+  let formatMixed = false;
   let eventCount = 0;
   let skipped = 0;
   let firstTs: string | null = null;
@@ -69,7 +127,8 @@ export function parseStreamingHistory(json: unknown): ParseSummary {
       skipped += 1;
       continue;
     }
-    format = format ?? rowFormat;
+    if (format === null) format = rowFormat;
+    else if (format !== rowFormat) formatMixed = true;
     let ts: string;
     let ms: number;
     let track: unknown;
@@ -135,5 +194,13 @@ export function parseStreamingHistory(json: unknown): ParseSummary {
       'No music plays found in this file. Pick a Streaming_History_Audio JSON file from your Spotify export.',
     );
   }
-  return { aggregates: [...acc.values()], events, eventCount, skipped, format, firstTs, lastTs };
+  return {
+    aggregates: [...acc.values()],
+    events,
+    eventCount,
+    skipped,
+    format: formatMixed ? null : format,
+    firstTs,
+    lastTs,
+  };
 }

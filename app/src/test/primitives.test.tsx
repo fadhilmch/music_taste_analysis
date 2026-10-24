@@ -179,15 +179,31 @@ describe('Checkbox', () => {
 
 describe('FileInput', () => {
   it('stays visually hidden, accepts JSON, reports the chosen file and resets', () => {
-    const onFile = vi.fn();
+    const onFiles = vi.fn();
     const ref = React.createRef<HTMLInputElement>();
-    render(<FileInput inputRef={ref} onFile={onFile} label="Choose a Spotify streaming history JSON file" />);
-    const input = screen.getByLabelText('Choose a Spotify streaming history JSON file');
+    render(
+      <FileInput inputRef={ref} onFiles={onFiles} label="Choose your Spotify streaming history JSON files" />,
+    );
+    const input = screen.getByLabelText('Choose your Spotify streaming history JSON files');
     expect(input).toHaveClass('absolute', 'h-px', 'w-px');
     expect(input).toHaveAttribute('accept', '.json,application/json');
     const file = new File(['{}'], 'history.json', { type: 'application/json' });
     fireEvent.change(input, { target: { files: [file] } });
-    expect(onFile).toHaveBeenCalledWith(file);
+    expect(onFiles).toHaveBeenCalledWith([file]);
     expect((input as HTMLInputElement).value).toBe('');
+  });
+
+  it('allows picking several export files at once', () => {
+    const onFiles = vi.fn();
+    const ref = React.createRef<HTMLInputElement>();
+    render(
+      <FileInput inputRef={ref} onFiles={onFiles} label="Choose your Spotify streaming history JSON files" />,
+    );
+    const input = screen.getByLabelText('Choose your Spotify streaming history JSON files');
+    expect(input).toHaveAttribute('multiple');
+    const a = new File(['[]'], 'a.json', { type: 'application/json' });
+    const b = new File(['[]'], 'b.json', { type: 'application/json' });
+    fireEvent.change(input, { target: { files: [a, b] } });
+    expect(onFiles).toHaveBeenCalledWith([a, b]);
   });
 });

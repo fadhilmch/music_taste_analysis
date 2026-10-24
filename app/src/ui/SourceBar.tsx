@@ -6,7 +6,7 @@ export function SourceBar() {
   const source = useAppStore((s) => s.source);
   const fileName = useAppStore((s) => s.fileName);
   const loadDemo = useAppStore((s) => s.loadDemo);
-  const loadFile = useAppStore((s) => s.loadFile);
+  const loadFiles = useAppStore((s) => s.loadFiles);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   return (
@@ -24,8 +24,8 @@ export function SourceBar() {
         </button>
         <FileInput
           inputRef={inputRef}
-          label="Choose a Spotify streaming history JSON file"
-          onFile={(f) => void loadFile(f)}
+          label="Choose your Spotify streaming history JSON files"
+          onFiles={(fs) => void loadFiles(fs)}
         />
       </div>
       {source === 'demo' && (

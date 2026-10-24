@@ -198,12 +198,12 @@ export function Checkbox({
 
 export function FileInput({
   inputRef,
-  onFile,
+  onFiles,
   accept = '.json,application/json',
   label,
 }: {
   inputRef: React.RefObject<HTMLInputElement>;
-  onFile: (file: File) => void;
+  onFiles: (files: File[]) => void;
   accept?: string;
   label: string;
 }) {
@@ -211,12 +211,13 @@ export function FileInput({
     <input
       ref={inputRef}
       type="file"
+      multiple
       accept={accept}
       aria-label={label}
       className="absolute w-px h-px overflow-hidden [clip:rect(0_0_0_0)] whitespace-nowrap"
       onChange={(e) => {
-        const f = e.target.files?.[0];
-        if (f) onFile(f);
+        const files = e.target.files ? [...e.target.files] : [];
+        if (files.length > 0) onFiles(files);
         e.target.value = '';
       }}
     />
