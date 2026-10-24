@@ -43,7 +43,7 @@ class FakeWorker {
   onmessage: ((e: MessageEvent) => void) | null = null;
   onerror: (() => void) | null = null;
   postMessage() {
-    this.onmessage?.({ data: { ok: true, summary } } as MessageEvent);
+    this.onmessage?.({ data: { ok: true, summary, reports: [] } } as MessageEvent);
   }
   terminate() {}
 }

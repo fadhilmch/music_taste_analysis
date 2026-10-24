@@ -82,18 +82,69 @@ function rowKey(row: unknown): string | null {
  * rows are removed once, and the result goes through the same fold as a
  * single file. Returns duplicate/file counts in the optional summary fields.
  */
+/**
+ * Minute-precision key used to reconcile the same play appearing in both
+ * history packages. The legacy "Account data" history ends timestamps at the
+ * minute, so an exact extended match needs the same track, artist, minute and
+ * milliseconds. Anything short of that keeps the legacy row: dropping real
+ * plays is worse than keeping a possible duplicate.
+ */
+function crossPackageKey(row: unknown): string | null {
+  const format = detectFormat(row);
+  if (format === 'extended') {
+    const r = row as ExtendedRow;
+    return `${String(r.ts).slice(0, 16)}|${String(r.master_metadata_album_artist_name)}|${String(r.master_metadata_track_name)}|${String(r.ms_played)}`;
+  }
+  if (format === 'legacy') {
+    const r = row as LegacyRow;
+    return `${String(r.endTime).replace(' ', 'T')}|${String(r.artistName)}|${String(r.trackName)}|${String(r.msPlayed)}`;
+  }
+  return null;
+}
+
+/**
+ * Parse several export files into one combined summary. Rows are concatenated
+ * (filenames carry no meaning - files can span any period), exact duplicate
+ * rows are removed once, and the result goes through the same fold as a
+ * single file. When both history packages are present, legacy rows that
+ * exactly match an extended play are dropped as the same play told twice;
+ * unmatched legacy rows are always kept. Returns duplicate/file counts in the
+ * optional summary fields.
+ */
 export function parseStreamingHistoryMulti(jsonArrays: unknown[]): ParseSummary {
   if (jsonArrays.length === 0) {
     throw new Error('Pick at least one Streaming_History_Audio JSON file from your Spotify export.');
   }
   const seen = new Set<string>();
+  const extendedKeys = new Set<string>();
   let duplicates = 0;
   const rows: unknown[] = [];
+  const arrays: unknown[][] = [];
   for (const json of jsonArrays) {
     if (!Array.isArray(json)) {
       throw new Error('This file is not a Spotify streaming-history export (expected a JSON array).');
     }
+    arrays.push(json);
+  }
+  for (const json of arrays) {
     for (const row of json) {
+      if (detectFormat(row) === 'extended') {
+        const key = crossPackageKey(row);
+        if (key !== null) extendedKeys.add(key);
+      }
+    }
+  }
+  let crossPackageDuplicates = 0;
+  const hasExtended = extendedKeys.size > 0;
+  for (const json of arrays) {
+    for (const row of json) {
+      if (hasExtended && detectFormat(row) === 'legacy') {
+        const key = crossPackageKey(row);
+        if (key !== null && extendedKeys.has(key)) {
+          crossPackageDuplicates += 1;
+          continue;
+        }
+      }
       const key = rowKey(row);
       if (key !== null) {
         if (seen.has(key)) {
@@ -107,6 +158,7 @@ export function parseStreamingHistoryMulti(jsonArrays: unknown[]): ParseSummary 
   }
   const summary = parseRows(rows);
   summary.duplicates = duplicates;
+  if (crossPackageDuplicates > 0) summary.crossPackageDuplicates = crossPackageDuplicates;
   summary.files = jsonArrays.length;
   return summary;
 }

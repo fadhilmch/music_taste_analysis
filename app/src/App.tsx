@@ -1,5 +1,6 @@
 import React from 'react';
 import { buildMonths } from './data/stats';
+import { coverageLabel, looksLikePartialHistory } from './data/coverage';
 import type { View } from './data/types';
 import { useAppStore } from './state/store';
 import { ArtistsView, TracksView } from './ui/ListsView';
@@ -63,6 +64,7 @@ export default function App() {
   const error = useAppStore((s) => s.error);
   const aggregates = useAppStore((s) => s.aggregates);
   const parseInfo = useAppStore((s) => s.parseInfo);
+  const fileReports = useAppStore((s) => s.fileReports);
   const clearError = useAppStore((s) => s.clearError);
   const view = useAppStore((s) => s.view);
   const setView = useAppStore((s) => s.setView);
@@ -142,20 +144,49 @@ export default function App() {
           {!loading && !error && view !== 'guide' && source !== null && aggregates.length > 0 && (
             <>
               {parseInfo && (
-                <p className="tj-note">
-                  {parseInfo.eventCount.toLocaleString()} plays read
-                  {parseInfo.files && parseInfo.files > 1 ? ` from ${parseInfo.files} files` : ''}
-                  {parseInfo.format
-                    ? ` (${parseInfo.format === 'extended' ? 'extended' : 'legacy'} export)`
-                    : ''}
-                  {parseInfo.skipped > 0
-                    ? `, ${parseInfo.skipped.toLocaleString()} non-music or invalid rows skipped`
-                    : ''}
-                  {(parseInfo.duplicates ?? 0) > 0
-                    ? `, ${parseInfo.duplicates!.toLocaleString()} duplicate rows merged`
-                    : ''}
-                  .
-                </p>
+                <>
+                  <p className="tj-note">
+                    {parseInfo.eventCount.toLocaleString()} plays read
+                    {parseInfo.files && parseInfo.files > 1 ? ` from ${parseInfo.files} history files` : ''}
+                    {parseInfo.format
+                      ? ` (${parseInfo.format === 'extended' ? 'extended' : 'legacy'} export)`
+                      : ' (extended and legacy exports combined)'}
+                    {parseInfo.skipped > 0
+                      ? `, ${parseInfo.skipped.toLocaleString()} non-music or invalid rows skipped`
+                      : ''}
+                    {(parseInfo.duplicates ?? 0) > 0
+                      ? `, ${parseInfo.duplicates!.toLocaleString()} duplicate rows merged`
+                      : ''}
+                    {(parseInfo.crossPackageDuplicates ?? 0) > 0
+                      ? `, ${parseInfo.crossPackageDuplicates!.toLocaleString()} plays already in your extended history removed`
+                      : ''}
+                    .
+                  </p>
+                  {fileReports && fileReports.some((r) => r.status !== 'loaded') && (
+                    <p className="tj-note">
+                      {fileReports.filter((r) => r.status !== 'loaded').length === 1
+                        ? '1 file had no listening history and was skipped: '
+                        : `${fileReports.filter((r) => r.status !== 'loaded').length} files had no listening history and were skipped: `}
+                      {fileReports
+                        .filter((r) => r.status !== 'loaded')
+                        .slice(0, 4)
+                        .map((r) => r.name)
+                        .join(', ')}
+                      {fileReports.filter((r) => r.status !== 'loaded').length > 4
+                        ? `, +${fileReports.filter((r) => r.status !== 'loaded').length - 4} more`
+                        : ''}
+                      .
+                    </p>
+                  )}
+                  {parseInfo.firstTs && parseInfo.lastTs && (
+                    <p className="tj-note">
+                      Covers {coverageLabel(parseInfo.firstTs)} to {coverageLabel(parseInfo.lastTs)}.
+                      {looksLikePartialHistory(parseInfo)
+                        ? " This looks like Spotify's 1-year Account data export - request the Extended streaming history package for your full history (see the guide)."
+                        : ''}
+                    </p>
+                  )}
+                </>
               )}
               <div className="tj-ranges" role="group" aria-label="Time range">
                 {RANGES.map((r) => (

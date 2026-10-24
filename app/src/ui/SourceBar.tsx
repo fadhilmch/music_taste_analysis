@@ -24,7 +24,8 @@ export function SourceBar() {
         </button>
         <FileInput
           inputRef={inputRef}
-          label="Choose your Spotify streaming history JSON files"
+          accept=".json,.zip,application/json,application/zip"
+          label="Choose your Spotify export ZIP or streaming history JSON files"
           onFiles={(fs) => void loadFiles(fs)}
         />
       </div>

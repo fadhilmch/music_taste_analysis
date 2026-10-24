@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { buildDemoAggregates, buildDemoEvents, DEMO_GENRES } from '../data/demoData';
 import { matchArtists } from '../data/genreService';
 import type { ParseSummary } from '../data/types';
+import { extractZipJson, isZipName, type FileReport, type PickedFile } from '../data/importFiles';
 import { uniqueArtists } from '../data/stats';
 import type { ArtistGenre, PlayAggregate, PlayEvent, View } from '../data/types';
 
@@ -20,6 +21,8 @@ interface AppState {
   source: Source;
   fileName: string | null;
   parseInfo: Omit<ParseSummary, 'aggregates' | 'events'> | null;
+  /** Per picked file: recognized as listening history or skipped, and why. */
+  fileReports: FileReport[] | null;
   aggregates: PlayAggregate[];
   events: PlayEvent[];
   genres: Record<string, ArtistGenre>;
@@ -55,17 +58,18 @@ let matchAbort: AbortController | null = null;
 // someone picking a file - translate them into what to do next.
 export function friendlyImportError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
-  if (/streaming-history export|No music plays found/i.test(msg)) return msg;
+  if (/streaming-history export|No music plays found|No listening history found|ZIP/i.test(msg)) return msg;
   if (/JSON|Unexpected token|parse/i.test(msg)) {
     return 'That file is not valid JSON. Pick a Streaming_History_Audio JSON file from your Spotify export.';
   }
-  return 'That file could not be read as a Spotify export. Pick a Streaming_History_Audio JSON file from your Spotify export.';
+  return 'Those files could not be read as a Spotify export. Pick the Spotify export ZIP or its Streaming_History JSON files.';
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
   source: null,
   fileName: null,
   parseInfo: null,
+  fileReports: null,
   aggregates: [],
   events: [],
   genres: {},
@@ -89,6 +93,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       source: 'demo',
       fileName: null,
       parseInfo: null,
+      fileReports: null,
       aggregates,
       events: buildDemoEvents(),
       genres: { ...DEMO_GENRES },
@@ -109,36 +114,55 @@ export const useAppStore = create<AppState>((set, get) => ({
     matchAbort?.abort();
     set({ loading: true, error: null, playing: false, loadProgress: null });
     try {
-      const texts = await Promise.all(files.map((f) => f.text()));
-      const summary = await new Promise<ParseSummary>((resolve, reject) => {
-        const worker = new Worker(new URL('../workers/parseWorker.ts', import.meta.url), { type: 'module' });
-        worker.onmessage = (
-          e: MessageEvent<{
-            ok?: boolean;
-            summary?: ParseSummary;
-            error?: string;
-            progress?: { done: number; total: number };
-          }>,
-        ) => {
-          if (e.data.progress) {
-            set({ loadProgress: e.data.progress });
-            return;
-          }
-          worker.terminate();
-          if (e.data.ok && e.data.summary) resolve(e.data.summary);
-          else reject(new Error(e.data.error ?? 'Could not parse this file.'));
-        };
-        worker.onerror = () => {
-          worker.terminate();
-          reject(new Error('Could not parse this file.'));
-        };
-        worker.postMessage(texts);
-      });
+      // Unpack any ZIPs first: the picker accepts the whole export archive,
+      // loose JSON files, or a mix of both.
+      const picked: PickedFile[] = [];
+      for (const f of files) {
+        if (isZipName(f.name)) {
+          picked.push(...extractZipJson(new Uint8Array(await f.arrayBuffer())));
+        } else {
+          picked.push({ name: f.name, text: await f.text() });
+        }
+      }
+      const result = await new Promise<{ summary: ParseSummary; reports: FileReport[] }>(
+        (resolve, reject) => {
+          const worker = new Worker(new URL('../workers/parseWorker.ts', import.meta.url), {
+            type: 'module',
+          });
+          worker.onmessage = (
+            e: MessageEvent<{
+              ok?: boolean;
+              summary?: ParseSummary;
+              reports?: FileReport[];
+              error?: string;
+              progress?: { done: number; total: number };
+            }>,
+          ) => {
+            if (e.data.progress) {
+              set({ loadProgress: e.data.progress });
+              return;
+            }
+            worker.terminate();
+            if (e.data.ok && e.data.summary && e.data.reports) {
+              resolve({ summary: e.data.summary, reports: e.data.reports });
+            } else {
+              reject(new Error(e.data.error ?? 'Could not parse this file.'));
+            }
+          };
+          worker.onerror = () => {
+            worker.terminate();
+            reject(new Error('Could not parse this file.'));
+          };
+          worker.postMessage(picked);
+        },
+      );
+      const { summary, reports } = result;
       const { aggregates, events, ...parseInfo } = summary;
       set({
         source: 'export',
-        fileName: files.length === 1 ? files[0].name : `${files.length} export files`,
+        fileName: files.length === 1 ? files[0].name : `${files.length} files`,
         parseInfo,
+        fileReports: reports,
         aggregates,
         events,
         genres: {},
@@ -197,6 +221,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       source: null,
       fileName: null,
       parseInfo: null,
+      fileReports: null,
       aggregates: [],
       events: [],
       genres: {},
