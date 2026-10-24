@@ -35,6 +35,8 @@ export interface ParseSummary {
   lastTs: string | null;
   /** Set only by multi-file parsing: exact duplicate rows removed. */
   duplicates?: number;
+  /** Legacy-package plays dropped because the extended package has the same play. */
+  crossPackageDuplicates?: number;
   /** Set only by multi-file parsing: how many files were combined. */
   files?: number;
 }

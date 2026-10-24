@@ -1,26 +1,35 @@
 /// <reference lib="webworker" />
-import { parseStreamingHistory, parseStreamingHistoryMulti } from '../data/parseExport';
+import { parseStreamingHistoryMulti } from '../data/parseExport';
+import { classifyFile, type FileReport, type PickedFile } from '../data/importFiles';
 
 /**
- * Parses export JSON off the main thread so large histories do not freeze the
- * UI. Receives one raw file text or an array of them (Spotify splits exports
- * into several JSON files), reports per-file progress for multi-file reads,
- * and returns the combined ParseSummary.
+ * Parses export files off the main thread so large histories do not freeze
+ * the UI. Receives the picked files (already extracted from any ZIP on the
+ * main thread), recognizes which ones carry listening history, reports
+ * per-file progress, and returns the combined ParseSummary plus one report
+ * per picked file. Non-history files in the batch (playlists, account data,
+ * search queries, ...) are skipped, not fatal; only a batch with no history
+ * at all is an error.
  */
-self.onmessage = (e: MessageEvent<string | string[]>) => {
+self.onmessage = (e: MessageEvent<PickedFile[]>) => {
   try {
-    if (Array.isArray(e.data)) {
-      const parts: unknown[] = [];
-      e.data.forEach((text, i) => {
-        parts.push(JSON.parse(text));
-        postMessage({ progress: { done: i + 1, total: e.data.length } });
-      });
-      postMessage({ ok: true, summary: parseStreamingHistoryMulti(parts) });
-    } else {
-      const json = JSON.parse(e.data) as unknown;
-      const summary = parseStreamingHistory(json);
-      postMessage({ ok: true, summary });
+    const reports: FileReport[] = [];
+    const historyParts: { json: unknown; report: FileReport }[] = [];
+    e.data.forEach((file, i) => {
+      const report = classifyFile(file);
+      reports.push(report);
+      if (report.status === 'loaded') {
+        historyParts.push({ json: JSON.parse(file.text) as unknown, report });
+      }
+      postMessage({ progress: { done: i + 1, total: e.data.length } });
+    });
+    if (historyParts.length === 0) {
+      throw new Error(
+        'No listening history found in these files. The app needs the Streaming History files from Spotify\'s "Account data" or "Extended streaming history" package - the guide explains how to request them.',
+      );
     }
+    const summary = parseStreamingHistoryMulti(historyParts.map((p) => p.json));
+    postMessage({ ok: true, summary, reports });
   } catch (err) {
     postMessage({ ok: false, error: err instanceof Error ? err.message : String(err) });
   }
