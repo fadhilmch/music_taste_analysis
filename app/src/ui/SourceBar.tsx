@@ -36,9 +36,9 @@ export function SourceBar() {
       )}
       {source === 'export' && (
         <p className="tj-srcnote">
-          {fileName ? `Reading ${fileName}. ` : ''}
-          Your file is parsed in this browser tab and never uploaded. Only listening fields (time, track,
-          artist, milliseconds played) are read; anything else in the export is ignored.
+          {fileName ? `Loaded ${fileName}. ` : ''}
+          Parsed in this browser tab and never uploaded. Only listening fields (time, track, artist,
+          milliseconds played) are read; anything else in the export is ignored.
         </p>
       )}
     </div>
