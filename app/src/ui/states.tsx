@@ -46,8 +46,8 @@ export function Onboarding() {
       <Kicker>Private - runs in your browser</Kicker>
       <p className="tj-onboard-title">Your listening, turned into a journey.</p>
       <p className="tj-onboard-body">
-        Take the demo for a spin, or drop in your own Spotify streaming history JSON files - select them
-        all together, they combine into one timeline. Everything is read in this tab only - nothing is uploaded.
+        Take the demo for a spin, or drop in your own Spotify streaming history JSON files - select them all
+        together, they combine into one timeline. Everything is read in this tab only - nothing is uploaded.
       </p>
       <div className="tj-onboard-actions">
         <Button onClick={loadDemo}>Try the demo journey</Button>

@@ -91,10 +91,7 @@ describe('parseStreamingHistoryMulti', () => {
 
   it('removes exact duplicate rows from overlapping export files once', () => {
     const dup = play('2024-01-01T00:00:00Z', 'Same', 'SameArtist', 30000);
-    const s = parseStreamingHistoryMulti([
-      [dup, play('2024-01-01T01:00:00Z', 'Other', 'SameArtist')],
-      [dup],
-    ]);
+    const s = parseStreamingHistoryMulti([[dup, play('2024-01-01T01:00:00Z', 'Other', 'SameArtist')], [dup]]);
     expect(s.eventCount).toBe(2);
     expect(s.duplicates).toBe(1);
     expect(s.events.filter((e) => e.track === 'Same')).toHaveLength(1);

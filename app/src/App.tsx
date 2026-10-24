@@ -144,9 +144,7 @@ export default function App() {
               {parseInfo && (
                 <p className="tj-note">
                   {parseInfo.eventCount.toLocaleString()} plays read
-                  {parseInfo.files && parseInfo.files > 1
-                    ? ` from ${parseInfo.files} files`
-                    : ''}
+                  {parseInfo.files && parseInfo.files > 1 ? ` from ${parseInfo.files} files` : ''}
                   {parseInfo.format
                     ? ` (${parseInfo.format === 'extended' ? 'extended' : 'legacy'} export)`
                     : ''}
