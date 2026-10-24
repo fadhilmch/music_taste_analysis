@@ -37,6 +37,8 @@ interface AppState {
 
   loadDemo: () => void;
   loadFile: (file: File) => Promise<void>;
+  loadFiles: (files: File[]) => Promise<void>;
+  loadProgress: { done: number; total: number } | null;
   startMatching: () => Promise<void>;
   setView: (v: View) => void;
   setRange: (r: string) => void;
@@ -72,6 +74,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   matchProgress: { done: 0, total: 0 },
   matchError: null,
   loading: false,
+  loadProgress: null,
   error: null,
   view: 'journey',
   range: 'all',
@@ -100,14 +103,27 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
   },
 
-  loadFile: async (file: File) => {
+  loadFile: async (file: File) => get().loadFiles([file]),
+
+  loadFiles: async (files: File[]) => {
     matchAbort?.abort();
-    set({ loading: true, error: null, playing: false });
+    set({ loading: true, error: null, playing: false, loadProgress: null });
     try {
-      const text = await file.text();
+      const texts = await Promise.all(files.map((f) => f.text()));
       const summary = await new Promise<ParseSummary>((resolve, reject) => {
         const worker = new Worker(new URL('../workers/parseWorker.ts', import.meta.url), { type: 'module' });
-        worker.onmessage = (e: MessageEvent<{ ok: boolean; summary?: ParseSummary; error?: string }>) => {
+        worker.onmessage = (
+          e: MessageEvent<{
+            ok?: boolean;
+            summary?: ParseSummary;
+            error?: string;
+            progress?: { done: number; total: number };
+          }>,
+        ) => {
+          if (e.data.progress) {
+            set({ loadProgress: e.data.progress });
+            return;
+          }
           worker.terminate();
           if (e.data.ok && e.data.summary) resolve(e.data.summary);
           else reject(new Error(e.data.error ?? 'Could not parse this file.'));
@@ -116,12 +132,12 @@ export const useAppStore = create<AppState>((set, get) => ({
           worker.terminate();
           reject(new Error('Could not parse this file.'));
         };
-        worker.postMessage(text);
+        worker.postMessage(texts);
       });
       const { aggregates, events, ...parseInfo } = summary;
       set({
         source: 'export',
-        fileName: file.name,
+        fileName: files.length === 1 ? files[0].name : `${files.length} export files`,
         parseInfo,
         aggregates,
         events,
@@ -133,11 +149,12 @@ export const useAppStore = create<AppState>((set, get) => ({
         loading: false,
         error: null,
         month: null,
+        loadProgress: null,
       });
       // No genre matching here on purpose: matching sends artist names to
       // MusicBrainz, so it only starts after explicit opt-in (Genres view).
     } catch (err) {
-      set({ loading: false, error: friendlyImportError(err) });
+      set({ loading: false, loadProgress: null, error: friendlyImportError(err) });
     }
   },
 
@@ -188,6 +205,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       matchProgress: { done: 0, total: 0 },
       matchError: null,
       loading: false,
+      loadProgress: null,
       error: null,
       month: null,
       playing: false,

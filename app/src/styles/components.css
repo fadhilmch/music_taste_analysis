@@ -173,14 +173,16 @@
   .tj-chart {
     display: flex;
     align-items: flex-end;
-    gap: 3px;
+    /* Gap scales down on narrow screens: with ~125 all-time bars, a fixed
+       3px gap alone can exceed the width and squeeze every bar to zero. */
+    gap: clamp(1px, 0.3vw, 3px);
     height: 130px;
   }
   .tj-bar {
     flex: 1;
     min-width: 0;
     border: 0;
-    border-radius: 6px 6px 3px 3px;
+    border-radius: clamp(1px, 0.35vw, 6px) clamp(1px, 0.35vw, 6px) 2px 2px;
     padding: 0;
     background: linear-gradient(180deg, #3b3b3b, #2b2b2b);
     transition: background 0.15s;

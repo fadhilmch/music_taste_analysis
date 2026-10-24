@@ -59,6 +59,7 @@ const VIEW_HEADS: Partial<Record<View, { title: string; blurb: string }>> = {
 export default function App() {
   const source = useAppStore((s) => s.source);
   const loading = useAppStore((s) => s.loading);
+  const loadProgress = useAppStore((s) => s.loadProgress);
   const error = useAppStore((s) => s.error);
   const aggregates = useAppStore((s) => s.aggregates);
   const parseInfo = useAppStore((s) => s.parseInfo);
@@ -107,7 +108,15 @@ export default function App() {
         <div className="tj-main">
           <SourceBar />
 
-          {loading && <LoadingState label="Reading your export in this tab - nothing is uploaded." />}
+          {loading && (
+            <LoadingState
+              label={
+                loadProgress && loadProgress.total > 1
+                  ? `Reading your export in this tab - file ${loadProgress.done} of ${loadProgress.total}. Nothing is uploaded.`
+                  : 'Reading your export in this tab - nothing is uploaded.'
+              }
+            />
+          )}
           {error && (
             <ErrorState
               title="That file did not work"
@@ -135,11 +144,15 @@ export default function App() {
               {parseInfo && (
                 <p className="tj-note">
                   {parseInfo.eventCount.toLocaleString()} plays read
+                  {parseInfo.files && parseInfo.files > 1 ? ` from ${parseInfo.files} files` : ''}
                   {parseInfo.format
                     ? ` (${parseInfo.format === 'extended' ? 'extended' : 'legacy'} export)`
                     : ''}
                   {parseInfo.skipped > 0
                     ? `, ${parseInfo.skipped.toLocaleString()} non-music or invalid rows skipped`
+                    : ''}
+                  {(parseInfo.duplicates ?? 0) > 0
+                    ? `, ${parseInfo.duplicates!.toLocaleString()} duplicate rows merged`
                     : ''}
                   .
                 </p>

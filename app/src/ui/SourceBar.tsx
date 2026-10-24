@@ -6,7 +6,7 @@ export function SourceBar() {
   const source = useAppStore((s) => s.source);
   const fileName = useAppStore((s) => s.fileName);
   const loadDemo = useAppStore((s) => s.loadDemo);
-  const loadFile = useAppStore((s) => s.loadFile);
+  const loadFiles = useAppStore((s) => s.loadFiles);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   return (
@@ -24,8 +24,8 @@ export function SourceBar() {
         </button>
         <FileInput
           inputRef={inputRef}
-          label="Choose a Spotify streaming history JSON file"
-          onFile={(f) => void loadFile(f)}
+          label="Choose your Spotify streaming history JSON files"
+          onFiles={(fs) => void loadFiles(fs)}
         />
       </div>
       {source === 'demo' && (
@@ -36,9 +36,9 @@ export function SourceBar() {
       )}
       {source === 'export' && (
         <p className="tj-srcnote">
-          {fileName ? `Reading ${fileName}. ` : ''}
-          Your file is parsed in this browser tab and never uploaded. Only listening fields (time, track,
-          artist, milliseconds played) are read; anything else in the export is ignored.
+          {fileName ? `Loaded ${fileName}. ` : ''}
+          Parsed in this browser tab and never uploaded. Only listening fields (time, track, artist,
+          milliseconds played) are read; anything else in the export is ignored.
         </p>
       )}
     </div>

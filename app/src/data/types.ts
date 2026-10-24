@@ -33,6 +33,10 @@ export interface ParseSummary {
   format: ExportFormat | null;
   firstTs: string | null;
   lastTs: string | null;
+  /** Set only by multi-file parsing: exact duplicate rows removed. */
+  duplicates?: number;
+  /** Set only by multi-file parsing: how many files were combined. */
+  files?: number;
 }
 
 export interface MonthBucket {
