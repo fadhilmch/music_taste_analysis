@@ -58,7 +58,12 @@ let matchAbort: AbortController | null = null;
 // someone picking a file - translate them into what to do next.
 export function friendlyImportError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
-  if (/streaming-history export|No music plays found|No listening history found|ZIP/i.test(msg)) return msg;
+  if (
+    /streaming-history export|No music plays found|No listening history found|ZIP|too large|more data than|more than \d+ JSON files/i.test(
+      msg,
+    )
+  )
+    return msg;
   if (/JSON|Unexpected token|parse/i.test(msg)) {
     return 'That file is not valid JSON. Pick a Streaming_History_Audio JSON file from your Spotify export.';
   }
@@ -119,6 +124,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       const picked: PickedFile[] = [];
       for (const f of files) {
         if (isZipName(f.name)) {
+          if (f.size > 512 * 1024 * 1024) {
+            throw new Error(
+              'That ZIP is too large to read here. Unzip it and pick the Streaming History JSON files instead.',
+            );
+          }
           picked.push(...extractZipJson(new Uint8Array(await f.arrayBuffer())));
         } else {
           picked.push({ name: f.name, text: await f.text() });

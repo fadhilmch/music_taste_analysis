@@ -162,22 +162,36 @@ export default function App() {
                       : ''}
                     .
                   </p>
-                  {fileReports && fileReports.some((r) => r.status !== 'loaded') && (
-                    <p className="tj-note">
-                      {fileReports.filter((r) => r.status !== 'loaded').length === 1
-                        ? '1 file had no listening history and was skipped: '
-                        : `${fileReports.filter((r) => r.status !== 'loaded').length} files had no listening history and were skipped: `}
-                      {fileReports
-                        .filter((r) => r.status !== 'loaded')
-                        .slice(0, 4)
-                        .map((r) => r.name)
-                        .join(', ')}
-                      {fileReports.filter((r) => r.status !== 'loaded').length > 4
-                        ? `, +${fileReports.filter((r) => r.status !== 'loaded').length - 4} more`
-                        : ''}
-                      .
-                    </p>
-                  )}
+                  {fileReports &&
+                    (() => {
+                      const notHistory = fileReports.filter((r) => r.status === 'not-history');
+                      const unreadable = fileReports.filter((r) => r.status === 'unreadable');
+                      const names = (list: typeof notHistory) =>
+                        list
+                          .slice(0, 4)
+                          .map((r) => r.name)
+                          .join(', ') + (list.length > 4 ? `, +${list.length - 4} more` : '');
+                      return (
+                        <>
+                          {notHistory.length > 0 && (
+                            <p className="tj-note">
+                              {notHistory.length === 1
+                                ? '1 file had no listening history and was skipped: '
+                                : `${notHistory.length} files had no listening history and were skipped: `}
+                              {names(notHistory)}.
+                            </p>
+                          )}
+                          {unreadable.length > 0 && (
+                            <p className="tj-note">
+                              {unreadable.length === 1
+                                ? '1 file could not be read as JSON and was skipped: '
+                                : `${unreadable.length} files could not be read as JSON and were skipped: `}
+                              {names(unreadable)}.
+                            </p>
+                          )}
+                        </>
+                      );
+                    })()}
                   {parseInfo.firstTs && parseInfo.lastTs && (
                     <p className="tj-note">
                       Covers {coverageLabel(parseInfo.firstTs)} to {coverageLabel(parseInfo.lastTs)}.

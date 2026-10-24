@@ -138,3 +138,66 @@ describe('coverage helpers', () => {
     ).toBe(false);
   });
 });
+
+describe('cross-package matching is one-to-one (multiset)', () => {
+  it('one extended play absorbs exactly one identical legacy play; a same-minute play with different ms is kept', () => {
+    const extended = [extPlay('2024-03-04T21:05:07Z', 'Tulus', 'Song', 200000)];
+    const legacy = [
+      legPlay('2024-03-04 21:05', 'Tulus', 'Song', 200000), // exact match - dropped
+      legPlay('2024-03-04 21:05', 'Tulus', 'Song', 199500), // same minute, different ms - not the same play, kept
+    ];
+    const s = parseStreamingHistoryMulti([extended, legacy]);
+    expect(s.crossPackageDuplicates).toBe(1);
+    expect(s.eventCount).toBe(2);
+  });
+  it('matching happens after within-format dedupe, so identical legacy rows collapse before reconciliation', () => {
+    const extended = [extPlay('2024-03-04T21:05:07Z', 'Tulus', 'Song', 200000)];
+    const legacy = [
+      legPlay('2024-03-04 21:05', 'Tulus', 'Song', 200000),
+      legPlay('2024-03-04 21:05', 'Tulus', 'Song', 200000),
+    ];
+    const s = parseStreamingHistoryMulti([extended, legacy]);
+    expect(s.duplicates).toBe(1); // the repeated legacy row is the same play told twice in one package
+    expect(s.crossPackageDuplicates).toBe(1);
+    expect(s.eventCount).toBe(1);
+  });
+  it('two extended plays in one minute (different seconds) can absorb only the legacy rows that survive dedupe', () => {
+    const extended = [
+      extPlay('2024-03-04T21:05:07Z', 'Tulus', 'Song', 200000),
+      extPlay('2024-03-04T21:05:40Z', 'Tulus', 'Song', 200000),
+    ];
+    const legacy = [legPlay('2024-03-04 21:05', 'Tulus', 'Song', 200000)];
+    const s = parseStreamingHistoryMulti([extended, legacy]);
+    expect(s.crossPackageDuplicates).toBe(1);
+    expect(s.eventCount).toBe(2);
+  });
+});
+
+describe('extractZipJson limits', () => {
+  const tiny = { maxEntries: 3, maxEntryBytes: 100, maxTotalBytes: 250 };
+  it('rejects too many JSON entries before decompressing', () => {
+    const zip = zipSync({
+      'a.json': strToU8('[]'),
+      'b.json': strToU8('[]'),
+      'c.json': strToU8('[]'),
+      'd.json': strToU8('[]'),
+    });
+    expect(() => extractZipJson(zip, tiny)).toThrow(/more than 3 JSON files/);
+  });
+  it('rejects an oversize entry from its metadata', () => {
+    const zip = zipSync({ 'big.json': strToU8('x'.repeat(500)) });
+    expect(() => extractZipJson(zip, tiny)).toThrow(/too large/);
+  });
+  it('rejects when total uncompressed size exceeds the cap', () => {
+    const zip = zipSync({
+      'a.json': strToU8('x'.repeat(90)),
+      'b.json': strToU8('x'.repeat(90)),
+      'c.json': strToU8('x'.repeat(90)),
+    });
+    expect(() => extractZipJson(zip, tiny)).toThrow(/more data/);
+  });
+  it('still extracts normally within the limits', () => {
+    const zip = zipSync({ 'ok.json': strToU8('[1]') });
+    expect(extractZipJson(zip, tiny)).toEqual([{ name: 'ok.json', text: '[1]' }]);
+  });
+});

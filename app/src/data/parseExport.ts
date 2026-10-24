@@ -116,7 +116,6 @@ export function parseStreamingHistoryMulti(jsonArrays: unknown[]): ParseSummary 
     throw new Error('Pick at least one Streaming_History_Audio JSON file from your Spotify export.');
   }
   const seen = new Set<string>();
-  const extendedKeys = new Set<string>();
   let duplicates = 0;
   const rows: unknown[] = [];
   const arrays: unknown[][] = [];
@@ -128,23 +127,6 @@ export function parseStreamingHistoryMulti(jsonArrays: unknown[]): ParseSummary 
   }
   for (const json of arrays) {
     for (const row of json) {
-      if (detectFormat(row) === 'extended') {
-        const key = crossPackageKey(row);
-        if (key !== null) extendedKeys.add(key);
-      }
-    }
-  }
-  let crossPackageDuplicates = 0;
-  const hasExtended = extendedKeys.size > 0;
-  for (const json of arrays) {
-    for (const row of json) {
-      if (hasExtended && detectFormat(row) === 'legacy') {
-        const key = crossPackageKey(row);
-        if (key !== null && extendedKeys.has(key)) {
-          crossPackageDuplicates += 1;
-          continue;
-        }
-      }
       const key = rowKey(row);
       if (key !== null) {
         if (seen.has(key)) {
@@ -156,7 +138,35 @@ export function parseStreamingHistoryMulti(jsonArrays: unknown[]): ParseSummary 
       rows.push(row);
     }
   }
-  const summary = parseRows(rows);
+  // Cross-package reconciliation, strictly one-to-one: each surviving
+  // extended play can absorb exactly one identical legacy play. A multiset
+  // (key -> remaining count) keeps repeated rows honest - two identical
+  // legacy rows cannot both be dropped against a single extended row.
+  const extendedCounts = new Map<string, number>();
+  for (const row of rows) {
+    if (detectFormat(row) === 'extended') {
+      const key = crossPackageKey(row);
+      if (key !== null) extendedCounts.set(key, (extendedCounts.get(key) ?? 0) + 1);
+    }
+  }
+  let crossPackageDuplicates = 0;
+  let reconciled = rows;
+  if (extendedCounts.size > 0) {
+    reconciled = [];
+    for (const row of rows) {
+      if (detectFormat(row) === 'legacy') {
+        const key = crossPackageKey(row);
+        const remaining = key !== null ? (extendedCounts.get(key) ?? 0) : 0;
+        if (key !== null && remaining > 0) {
+          extendedCounts.set(key, remaining - 1);
+          crossPackageDuplicates += 1;
+          continue;
+        }
+      }
+      reconciled.push(row);
+    }
+  }
+  const summary = parseRows(reconciled);
   summary.duplicates = duplicates;
   if (crossPackageDuplicates > 0) summary.crossPackageDuplicates = crossPackageDuplicates;
   summary.files = jsonArrays.length;

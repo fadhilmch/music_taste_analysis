@@ -60,6 +60,24 @@ export function classifyFile(file: PickedFile): FileReport {
   return { name: file.name, status: 'loaded', format: hit.format, rows: hit.rows };
 }
 
+/**
+ * Hard bounds on ZIP extraction. `unzipSync` decompresses every accepted
+ * entry into memory, so a hostile or broken archive must be stopped before
+ * unbounded allocation: caps on entry count, per-entry uncompressed size and
+ * total uncompressed size. Defaults are far beyond any real Spotify export
+ * (a heavy lifetime history is tens of MB of JSON).
+ */
+export interface ZipLimits {
+  maxEntries: number;
+  maxEntryBytes: number;
+  maxTotalBytes: number;
+}
+export const DEFAULT_ZIP_LIMITS: ZipLimits = {
+  maxEntries: 2000,
+  maxEntryBytes: 128 * 1024 * 1024,
+  maxTotalBytes: 512 * 1024 * 1024,
+};
+
 /** Basename of a ZIP entry, without any folder path. */
 function baseName(path: string): string {
   const parts = path.split('/');
@@ -71,18 +89,46 @@ function baseName(path: string): string {
  * are flattened to entry basenames; macOS metadata and non-JSON entries are
  * ignored. Throws when the file is not a readable ZIP.
  */
-export function extractZipJson(bytes: Uint8Array): PickedFile[] {
+export function extractZipJson(bytes: Uint8Array, limits: ZipLimits = DEFAULT_ZIP_LIMITS): PickedFile[] {
+  // The filter runs before any decompression, so oversize or excess entries
+  // are rejected from metadata alone (name, compressed and original size).
+  let seen = 0;
+  let acceptedBytes = 0;
   let entries: Record<string, Uint8Array>;
   try {
-    entries = unzipSync(bytes);
-  } catch {
-    throw new Error('That ZIP file could not be read. Try unzipping it and picking the JSON files instead.');
+    entries = unzipSync(bytes, {
+      filter: (info) => {
+        if (info.name.endsWith('/')) return false;
+        if (info.name.startsWith('__MACOSX/')) return false;
+        if (!/\.json$/i.test(info.name)) return false;
+        seen += 1;
+        if (seen > limits.maxEntries) {
+          throw new Error(
+            `That ZIP has more than ${limits.maxEntries} JSON files - that does not look like a Spotify export.`,
+          );
+        }
+        if (info.originalSize > limits.maxEntryBytes) {
+          throw new Error(
+            `"${baseName(info.name)}" is too large to read here. Unzip it on your computer and check it is a real Spotify export file.`,
+          );
+        }
+        acceptedBytes += info.originalSize;
+        if (acceptedBytes > limits.maxTotalBytes) {
+          throw new Error(
+            'That ZIP unpacks to more data than the app can read in a browser tab. Pick the Streaming History JSON files individually instead.',
+          );
+        }
+        return true;
+      },
+    });
+  } catch (err) {
+    if (err instanceof Error && /JSON files|too large|more data/.test(err.message)) throw err;
+    throw new Error('That ZIP file could not be read. Try unzipping it and picking the JSON files instead.', {
+      cause: err,
+    });
   }
   const out: PickedFile[] = [];
   for (const [path, data] of Object.entries(entries)) {
-    if (path.endsWith('/')) continue;
-    if (path.startsWith('__MACOSX/')) continue;
-    if (!/\.json$/i.test(path)) continue;
     out.push({ name: baseName(path), text: strFromU8(data) });
   }
   if (out.length === 0) {
